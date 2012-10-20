@@ -75,6 +75,11 @@
 #define DIRTY		4	/* Locally modified */
 #define WRITEBACK	8	/* In the process of write back */
 
+#define UP "/home/salma/Documents/up"
+#define DOWN "/home/salma/Documents/dn"
+#define INPUT "/home/salma/Documents/input"
+#define STATUS "/home/salma/Documents/status"
+
 #define is_state(x, y)		(x & y)
 #define set_state(x, y)		(x |= y)
 #define clear_state(x, y)	(x &= ~y)
@@ -1263,7 +1268,7 @@ static int cache_miss(struct cache_c *dmc, struct bio* bio, sector_t cache_block
 	while (--p) {
 		i++;
 		DPRINTK("iteration: %d", i);
-		filpopen(&fp, "/home/salma/Documents/input");
+		fp = filp_open(INPUT, O_RDWR, 0);
 		old_fs = get_fs();
 		set_fs(get_ds());
 		vfs_read(fp, buf, 1, &fp->f_pos);
@@ -1833,19 +1838,19 @@ int __init dm_cache_init(void)
 	struct file *filp_d;
 	struct file *filp_u;
 
-	if ((filpopen(&filp_i, "/home/salma/Documents/input")) < 0)
+	if ((filpopen(&filp_i, INPUT)) < 0)
 	DPRINTK("error creating the file");
 	filp_close(filp_i, NULL);
 
-	if ((filpopen(&filp_s, "/home/salma/Documents/status")) < 0)
+	if ((filpopen(&filp_s, STATUS)) < 0)
 	DPRINTK("error creating the file");
 	filp_close(filp_s, NULL);
 
-	if ((filpopen(&filp_d, "/home/salma/Documents/dn")) < 0)
+	if ((filpopen(&filp_d, DOWN)) < 0)
 	DPRINTK("error creating the file");
 	filp_close(filp_d, NULL);
 
-	if ((filpopen(&filp_u, "/home/salma/Documents/up")) < 0)
+	if ((filpopen(&filp_u, UP)) < 0)
 	DPRINTK("error creating the file");
 	filp_close(filp_u, NULL);
 
