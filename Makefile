@@ -1,16 +1,12 @@
-APPS = daemon server
-COMPILER = gcc
-DEBUG = -03
+SRCS = dm-cache.c dm.h
+EXTRA_CFLAGS :=-g
+obj-m += dm-cache.o
 
-define CC
-	@echo " [CC] $@" && ${COMPILER}
-endef
+all:
+	make -C /lib/modules/$(shell uname -r)/build M=$(PWD) modules
 
-CFLAGS = -Wall -Wextra
-
-all: depend ${APPS}
-server: server.o
-daemon: daemon.o
+TAGS: $(SRCS)
+	find . -regex ".*\.[cChH]\(pp\)?" -print | etags -
 
 clean:
-	rm -rf ${APPS} *.o *~ *.swp
+	make -C /lib/modules/$(shell uname -r)/build M=$(PWD) clean
