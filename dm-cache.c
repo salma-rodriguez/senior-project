@@ -1078,12 +1078,12 @@ static int cache_hit(struct cache_c *dmc, struct bio* bio, sector_t cache_block)
 	unsigned int offset;
 	struct cacheblock *cache;
 	
-	/* if (spinning && time >= 20) {
+	if (spinning && time >= 20) {
 		DPRINTK("no more misses: time to spin down disk");
 		time = 0;
 		spinning = 0;
-		update(DOWN, "1");
-	} */
+		set_val(DOWN);
+	}
 
 	offset = (unsigned int)(bio->bi_sector & dmc->block_mask);
 	cache = dmc->cache;
