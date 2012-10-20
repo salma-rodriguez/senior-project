@@ -97,7 +97,7 @@ int filpopen(struct file ** filp, const char *name) {
 	return 0;
 }
 
-int update(char *name, char *dat) {
+int set_val(char *name) {
 	int ret;
 	struct file *filp;
 	mm_segment_t old_fs;
@@ -105,7 +105,7 @@ int update(char *name, char *dat) {
 	old_fs = get_fs();
 	set_fs(get_ds());
 	//const char __user *
-	if ((vfs_write(filp, dat, 1, &filp->f_pos)) < 0) {
+	if ((vfs_write(filp, "1", 1, &filp->f_pos)) < 0) {
 		DPRINTK("I/O error");
 		ret = -EIO;
 	}
@@ -114,13 +114,30 @@ int update(char *name, char *dat) {
 	return ret;
 }
 
-int trigger_spin_up(void) {
+int clr_val(char *name) {
+	int ret;
+	struct file *filp;
+	mm_segment_t old_fs;
+	filp = filp_open(name, O_RDWR | O_TRUNC, 0);
+	old_fs = get_fs();
+	set_fs(get_ds());
+	//const char __user *
+	if ((vfs_write(filp, "0", 1, &filp->f_pos)) < 0) {
+		DPRINTK("I/O error");
+		ret = -EIO;
+	}
+	set_fs(old_fs);
+	filp_close(filp, NULL);
+	return ret;
+}
+
+/* int trigger_spin_up(void) {
 	int ret;
 	struct file *p, *q;
 	mm_segment_t old_fs;
 	ret = 0;
-	p = filp_open("/home/salma/Documents/input", O_RDWR | O_TRUNC, 0);
-	q = filp_open("/home/salma/Documents/up", O_RDWR | O_TRUNC, 0);
+	p = filp_open(INPUT, O_RDWR | O_TRUNC, 0);
+	q = filp_open(UP, O_RDWR | O_TRUNC, 0);
 	DPRINTK("after filp_open");
 	old_fs = get_fs();
 	set_fs(get_ds());
@@ -132,7 +149,7 @@ int trigger_spin_up(void) {
 	DPRINTK("after vfs_write");
 	filp_close(p, NULL);
 	return ret;
-}
+} */
 
 /*
  * Cache context
@@ -1294,12 +1311,11 @@ static int cache_miss(struct cache_c *dmc, struct bio* bio, sector_t cache_block
 	/* block until we are sure the disk is spinning */
 	if (!spinning) {
 		spinning = 1;
-		// update(UP, "1");
-		k = trigger_spin_up();
+		k = set_val(UP);
+		// k = trigger_spin_up();
 		buf = kmalloc(sizeof(char), GFP_KERNEL);
 		while (--p) {
-			i++;
-			DPRINTK("iteration: %d", i);
+			DPRINTK("iteration: %d", ++i);
 			fp = filp_open(INPUT, O_RDWR, 0);
 			old_fs = get_fs();
 			set_fs(get_ds());
@@ -1311,8 +1327,8 @@ static int cache_miss(struct cache_c *dmc, struct bio* bio, sector_t cache_block
 			schedule();
 		}
 		kfree(buf);
-		// update(INPUT, "0");
-		// update(STATUS, "1");
+		clr_val(INPUT);
+		set_val(STATUS);
 		goto done;
 	}
 
