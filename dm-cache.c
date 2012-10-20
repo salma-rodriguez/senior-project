@@ -93,8 +93,8 @@ int trigger_spin_up(void) {
 	struct file *p, *q;
 	mm_segment_t old_fs;
 	ret = 0;
-	p = filp_open("/home/salma/Documents/input", O_RDWR, 0);
-	q = filp_open("/home/salma/Documents/output", O_RDWR, 0);
+	p = filp_open("/home/salma/Documents/input", O_RDWR | O_TRUNC, 0);
+	q = filp_open("/home/salma/Documents/up", O_RDWR | O_TRUNC, 0);
 	DPRINTK("after filp_open");
 	old_fs = get_fs();
 	set_fs(get_ds());
@@ -1247,10 +1247,12 @@ static int cache_miss(struct cache_c *dmc, struct bio* bio, sector_t cache_block
 	/* function to write single byte to file so daemon can trigger a command */
 	int i;
 	int k;
+	int p;
 	char *buf;
 	struct file *fp;
 	mm_segment_t old_fs;
 	i = 0;
+	p = 100;
 	DPRINTK("there's a cache miss");
 	buf = kmalloc(sizeof(char), GFP_KERNEL);
 	DPRINTK("after allocating buffer");
@@ -1258,7 +1260,7 @@ static int cache_miss(struct cache_c *dmc, struct bio* bio, sector_t cache_block
 	if (k < 0) DPRINTK("Error writing: wakeup call not sent");
 	DPRINTK("After triggering spin-up");
 	/* block until we are sure the disk is spinning */
-	while (1) {
+	while (--p) {
 		i++;
 		DPRINTK("iteration: %d", i);
 		filpopen(&fp, "/home/salma/Documents/input");
@@ -1826,16 +1828,26 @@ static struct target_type cache_target = {
 int __init dm_cache_init(void)
 {
 	int r;
-	struct file *filp_w;
-	struct file *filp_r;
+	struct file *filp_i;
+	struct file *filp_s;
+	struct file *filp_d;
+	struct file *filp_u;
 
-	if((filpopen(&filp_r, "/home/salma/Documents/input")) < 0)
+	if ((filpopen(&filp_i, "/home/salma/Documents/input")) < 0)
 	DPRINTK("error creating the file");
-	filp_close(filp_r, NULL);
+	filp_close(filp_i, NULL);
 
-	if((filpopen(&filp_w, "/home/salma/Documents/output")) < 0)
+	if ((filpopen(&filp_s, "/home/salma/Documents/status")) < 0)
 	DPRINTK("error creating the file");
-	filp_close(filp_w, NULL);
+	filp_close(filp_s, NULL);
+
+	if ((filpopen(&filp_d, "/home/salma/Documents/dn")) < 0)
+	DPRINTK("error creating the file");
+	filp_close(filp_d, NULL);
+
+	if ((filpopen(&filp_u, "/home/salma/Documents/up")) < 0)
+	DPRINTK("error creating the file");
+	filp_close(filp_u, NULL);
 
 	r = jobs_init();
 	if (r)
