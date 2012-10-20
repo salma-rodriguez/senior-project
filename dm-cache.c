@@ -97,6 +97,23 @@ int filpopen(struct file ** filp, const char *name) {
 	return 0;
 }
 
+int update(char *name, char *dat) {
+	int ret;
+	struct file *filp;
+	mm_segment_t old_fs;
+	filp = filp_open(name, O_RDWR | O_TRUNC, 0);
+	old_fs = get_fs();
+	set_fs(get_ds());
+	//const char __user *
+	if ((vfs_write(filp, dat, 1, &filp->f_pos)) < 0) {
+		DPRINTK("I/O error");
+		ret = -EIO;
+	}
+	set_fs(old_fs);
+	filp_close(filp, NULL);
+	return ret;
+}
+
 int trigger_spin_up(void) {
 	int ret;
 	struct file *p, *q;
@@ -1041,8 +1058,18 @@ static void cache_invalidate(struct cache_c *dmc, sector_t cache_block)
  */
 static int cache_hit(struct cache_c *dmc, struct bio* bio, sector_t cache_block)
 {
-	unsigned int offset = (unsigned int)(bio->bi_sector & dmc->block_mask);
-	struct cacheblock *cache = dmc->cache;
+	unsigned int offset;
+	struct cacheblock *cache;
+	
+	/* if (spinning && time >= 20) {
+		DPRINTK("no more misses: time to spin down disk");
+		time = 0;
+		spinning = 0;
+		update(DOWN, "1");
+	} */
+
+	offset = (unsigned int)(bio->bi_sector & dmc->block_mask);
+	cache = dmc->cache;
 
 	dmc->cache_hits++;
 
@@ -1262,12 +1289,13 @@ static int cache_miss(struct cache_c *dmc, struct bio* bio, sector_t cache_block
 	i = 0, p = 100;
 	ts = current_kernel_time();
 	time = ts.tv_sec - time;
-	k = trigger_spin_up();
-	if (k < 0) DPRINTK("Error writing: wakeup call not sent");
+	// if (k < 0) DPRINTK("Error writing: wakeup call not sent");
 	DPRINTK("After triggering spin-up");
 	/* block until we are sure the disk is spinning */
 	if (!spinning) {
 		spinning = 1;
+		// update(UP, "1");
+		k = trigger_spin_up();
 		buf = kmalloc(sizeof(char), GFP_KERNEL);
 		while (--p) {
 			i++;
@@ -1283,6 +1311,8 @@ static int cache_miss(struct cache_c *dmc, struct bio* bio, sector_t cache_block
 			schedule();
 		}
 		kfree(buf);
+		// update(INPUT, "0");
+		// update(STATUS, "1");
 		goto done;
 	}
 
