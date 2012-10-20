@@ -37,6 +37,7 @@
 #include <linux/spinlock.h>
 #include <linux/workqueue.h>
 #include <linux/pagemap.h>
+#include <linux/time.h>
 
 #include "dm.h"
 #include <linux/dm-io.h>
@@ -83,6 +84,9 @@
 #define is_state(x, y)		(x & y)
 #define set_state(x, y)		(x |= y)
 #define clear_state(x, y)	(x &= ~y)
+
+int time;
+char spinning;
 
 int filpopen(struct file ** filp, const char *name) {
 	int mode = O_RDWR | O_CREAT;
@@ -1250,36 +1254,39 @@ static int cache_write_miss(struct cache_c *dmc, struct bio* bio, sector_t cache
 static int cache_miss(struct cache_c *dmc, struct bio* bio, sector_t cache_block) {
 	/* time to notify server to spin up disk if spun down */
 	/* function to write single byte to file so daemon can trigger a command */
-	int i;
-	int k;
-	int p;
+	int i, k, p;
 	char *buf;
 	struct file *fp;
+	struct timespec ts;
 	mm_segment_t old_fs;
-	i = 0;
-	p = 100;
-	DPRINTK("there's a cache miss");
-	buf = kmalloc(sizeof(char), GFP_KERNEL);
-	DPRINTK("after allocating buffer");
+	i = 0, p = 100;
+	ts = current_kernel_time();
+	time = ts.tv_sec - time;
 	k = trigger_spin_up();
 	if (k < 0) DPRINTK("Error writing: wakeup call not sent");
 	DPRINTK("After triggering spin-up");
 	/* block until we are sure the disk is spinning */
-	while (--p) {
-		i++;
-		DPRINTK("iteration: %d", i);
-		fp = filp_open(INPUT, O_RDWR, 0);
-		old_fs = get_fs();
-		set_fs(get_ds());
-		vfs_read(fp, buf, 1, &fp->f_pos);
-		set_fs(old_fs);
-		if (!(buf[0]^'1')) goto done;
-		DPRINTK("still waiting");
-		filp_close(fp, NULL);
-		schedule();
-	}	
+	if (!spinning) {
+		spinning = 1;
+		buf = kmalloc(sizeof(char), GFP_KERNEL);
+		while (--p) {
+			i++;
+			DPRINTK("iteration: %d", i);
+			fp = filp_open(INPUT, O_RDWR, 0);
+			old_fs = get_fs();
+			set_fs(get_ds());
+			vfs_read(fp, buf, 1, &fp->f_pos);
+			set_fs(old_fs);
+			filp_close(fp, NULL);
+			if (!(buf[0]^'1')) break;
+			DPRINTK("still waiting");
+			schedule();
+		}
+		kfree(buf);
+		goto done;
+	}
+
 done:
-	filp_close(fp, NULL);
 	if (bio_data_dir(bio) == READ)
 		return cache_read_miss(dmc, bio, cache_block);
 	else
@@ -1853,6 +1860,9 @@ int __init dm_cache_init(void)
 	if ((filpopen(&filp_u, UP)) < 0)
 	DPRINTK("error creating the file");
 	filp_close(filp_u, NULL);
+
+	time = 0;
+	spinning = 0;
 
 	r = jobs_init();
 	if (r)
