@@ -90,8 +90,8 @@
 #define MAX_PROC_SIZE 1
 
 int time;
-char *un, *dn, *sp, *in;
-
+char *un, *dn, *sp;
+static char in[MAX_PROC_SIZE];
 struct proc_dir_entry *proc_parent;
 struct proc_dir_entry *proc_input_entry;
 
@@ -1986,9 +1986,16 @@ int __init dm_cache_init(void)
 	if (create_proc_read_entry("sp", 0, proc_parent, sp_read_proc, NULL) == 0)
 		printk(KERN_ERR "Unable to register \"sp\" proc file\n");
 
-	proc_input_entry = create_proc_entry("in", 0666, proc_parent);
+	proc_input_entry = create_proc_entry("in", 0644, proc_parent);
 	proc_input_entry->read_proc = (read_proc_t *)in_read_proc;
 	proc_input_entry->write_proc = (write_proc_t *)write_proc;
+	// proc_input_entry->owner = THIS_MODULE;
+	proc_input_entry->mode = S_IFREG | S_IRUGO;
+	proc_input_entry->uid = 0;
+	proc_input_entry->gid = 0;
+	proc_input_entry->size = 1;
+
+	DPRINTK(KERN_INFO "/proc/input created\n");
 
 	time = 0;
 
@@ -1996,7 +2003,7 @@ int __init dm_cache_init(void)
 	kobj_init(in_kobj);
 	kobject_set_name(in_kobj, "in_kobj"); */
 
-	in = kzalloc(sizeof(char), GFP_KERNEL);
+	// in = kzalloc(sizeof(char), GFP_KERNEL);
 
 	/* sp = kzalloc(sizeof(char), GFP_KERNEL);
 	un = kzalloc(sizeof(char), GFP_KERNEL);
