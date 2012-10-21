@@ -1986,16 +1986,15 @@ int __init dm_cache_init(void)
 	if (create_proc_read_entry("sp", 0, proc_parent, sp_read_proc, NULL) == 0)
 		printk(KERN_ERR "Unable to register \"sp\" proc file\n");
 
-	proc_input_entry = create_proc_entry("in", 0644, proc_parent);
+	/* proc_input_entry = create_proc_entry("in", 0644, proc_parent);
 	proc_input_entry->read_proc = (read_proc_t *)in_read_proc;
 	proc_input_entry->write_proc = (write_proc_t *)write_proc;
-	// proc_input_entry->owner = THIS_MODULE;
-	proc_input_entry->mode = S_IFREG | S_IRUGO;
+	proc_input_entry->mode = S_IFREG | S_IRUGO | S_IWUSR;
 	proc_input_entry->uid = 0;
-	proc_input_entry->gid = 0;
-	proc_input_entry->size = 1;
+	proc_input_entry->gid = 0; */
+	// proc_input_entry->size = 1;
 
-	DPRINTK(KERN_INFO "/proc/input created\n");
+	// DPRINTK(KERN_INFO "/proc/input created\n");
 
 	time = 0;
 
