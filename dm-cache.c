@@ -38,10 +38,11 @@
 #include <linux/workqueue.h>
 #include <linux/pagemap.h>
 #include <linux/time.h>
-#include <linux/proc_fs.h>
 #include <linux/uaccess.h>
+#include <linux/syscalls.h>
 
 #include "dm.h"
+#include "proc_files.h"
 #include <linux/dm-io.h>
 // #include "dm-bio-list.h"
 #include <linux/dm-kcopyd.h>
@@ -78,127 +79,9 @@
 #define DIRTY		4	/* Locally modified */
 #define WRITEBACK	8	/* In the process of write back */
 
-#define UP "/proc/dm-cache/up"
-#define DN "/proc/dm-cache/dn"
-#define IN "/proc/dm-cache/in"
-#define SP "/proc/dm-cache/sp"
-
 #define is_state(x, y)		(x & y)
 #define set_state(x, y)		(x |= y)
 #define clear_state(x, y)	(x &= ~y)
-
-#define MAX_PROC_SIZE 1
-
-int time;
-char *un, *dn, *sp;
-static char in[MAX_PROC_SIZE];
-struct proc_dir_entry *proc_parent;
-struct proc_dir_entry *proc_input_entry;
-
-static int read_proc(char *str, char *buffer, char **start, off_t offset, int size, int *eof, void *data) {
-	int len = strlen(str);
-	if (size < len)
-		return -EINVAL;
-	if (offset != 0)
-		return 0;
-	strcpy(buffer, str);
-	*eof = 1;
-	return len;
-}
-
-static int write_proc(struct file *file, const char __user *buffer, unsigned long count, void *data) {
-	if (count > MAX_PROC_SIZE)
-		count = MAX_PROC_SIZE;
-	if (copy_from_user(in, buffer, count))
-		return -EFAULT;
-	DPRINTK("other variable: %s\n", in);
-	return count;
-}
-
-static int up_read_proc(char *buffer, char **start, off_t offset, int size, int *eof, void *data) {
-	return read_proc(un, buffer, start, offset, size, eof, data);
-}
-
-static int dn_read_proc(char *buffer, char **start, off_t offset, int size, int *eof, void *data) {
-	return read_proc(dn, buffer, start, offset, size, eof, data);
-}
-
-static int sp_read_proc(char *buffer, char **start, off_t offset, int size, int *eof, void *data) {
-	return read_proc(sp, buffer, start, offset, size, eof, data);
-}
-
-static int in_read_proc(char *buffer, char **start, off_t offset, int size, int *eof, void *data) {
-	return read_proc(in, buffer, start, offset, size, eof, data);
-}
-
-/* struct in_obj {
-	struct kobject kobj;
-	struct module *owner;
-	int input;
-}; */
-
-/* int filpopen(struct file ** filp, const char *name) {
-	int mode = O_RDWR | O_CREAT;
-	int permflags = S_IRUSR | S_IWUSR;
-	*filp = filp_open(name, mode, permflags);
-	if (IS_ERR(*filp))
-		return -EBADF;
-	return 0;
-}
-
-int set_val(char *name) {
-	int ret;
-	struct file *filp;
-	mm_segment_t old_fs;
-	filp = filp_open(name, O_RDWR | O_TRUNC, 0);
-	old_fs = get_fs();
-	set_fs(get_ds());
-	//const char __user *
-	if ((vfs_write(filp, "1", 1, &filp->f_pos)) < 0) {
-		DPRINTK("I/O error");
-		ret = -EIO;
-	}
-	set_fs(old_fs);
-	filp_close(filp, NULL);
-	return ret;
-}
-
-int clr_val(char *name) {
-	int ret;
-	struct file *filp;
-	mm_segment_t old_fs;
-	filp = filp_open(name, O_RDWR | O_TRUNC, 0);
-	old_fs = get_fs();
-	set_fs(get_ds());
-	//const char __user *
-	if ((vfs_write(filp, "0", 1, &filp->f_pos)) < 0) {
-		DPRINTK("I/O error");
-		ret = -EIO;
-	}
-	set_fs(old_fs);
-	filp_close(filp, NULL);
-	return ret;
-} */
-
-/* int trigger_spin_up(void) {
-	int ret;
-	struct file *p, *q;
-	mm_segment_t old_fs;
-	ret = 0;
-	p = filp_open(IN, O_RDWR | O_TRUNC, 0);
-	q = filp_open(UP, O_RDWR | O_TRUNC, 0);
-	DPRINTK("after filp_open");
-	old_fs = get_fs();
-	set_fs(get_ds());
-	if ((vfs_write(p, "0", 1, &p->f_pos)) < 0)
-		ret = -EIO;
-	if ((vfs_write(q, "1", 1, &q->f_pos)) < 0)
-		ret = -EIO;
-	set_fs(old_fs);
-	DPRINTK("after vfs_write");
-	filp_close(p, NULL);
-	return ret;
-} */
 
 /*
  * Cache context
@@ -1124,24 +1007,36 @@ static void cache_invalidate(struct cache_c *dmc, sector_t cache_block)
  */
 static int cache_hit(struct cache_c *dmc, struct bio* bio, sector_t cache_block)
 {
-	int i,p;
+	int i,p, in_fd;
 	unsigned int offset;
+	mm_segment_t old_fs;
 	struct cacheblock *cache;
+	struct file *fp;
+	char buf[1];
 	p = 100;
 	if (sp && time >= 20) {
 		DPRINTK("time to spin down disk");
 		time = 0;
 		dn = "1";
 		/* block until spun down */
-		while (--p) {
-			DPRINTK("iteration: %d", ++i);
-			if (in[0]&0x0F) break;
+		while (1) {
+			DPRINTK("cache_hit iteration: %d", ++i);
+
+			fp = filp_open(IN, O_RDONLY, 0);
+			old_fs = get_fs();
+			set_fs(get_ds());
+			vfs_read(fp, buf, 1, &fp->f_pos);
+			set_fs(old_fs);
+			filp_close(fp, NULL);
+			
+			DPRINTK("val: %s", buf);
+
+			if (buf[0]&0x0F) break;
 			DPRINTK("still waiting");
 			schedule();
 		}
 		dn = "0";
 		sp = "0";
-		// set_val(DN);
 	}
 
 	offset = (unsigned int)(bio->bi_sector & dmc->block_mask);
@@ -1358,8 +1253,10 @@ static int cache_miss(struct cache_c *dmc, struct bio* bio, sector_t cache_block
 	/* time to notify server to spin up disk if spun down */
 	/* function to write single byte to file so daemon can trigger a command */
 	int i, k;
+	char buf[1];
+	struct file *fp;
 	struct timespec ts;
-	// mm_segment_t old_fs;
+	mm_segment_t old_fs;
 	i = 0, k = 100;
 	ts = current_kernel_time();
 	time = ts.tv_sec - time;
@@ -1368,28 +1265,25 @@ static int cache_miss(struct cache_c *dmc, struct bio* bio, sector_t cache_block
 	if (!(sp[0]&0x0F)) {
 		DPRINTK("inside if statement");
 		un = "1";
-		// k = set_val(UP);
-		// k = trigger_spin_up();
-		// if (k < 0) DPRINTK("Error writing: wakeup call not sent");
-		// buf = kmalloc(sizeof(char), GFP_KERNEL);
-		while (--k) {
-			DPRINTK("inside while loop");
-			DPRINTK("iteration: %d", ++i);
-			/* fp = filp_open(IN, O_RDWR, 0);
+		clr_val(IN);
+		while (1) {
+			DPRINTK("cache_miss iteration: %d", ++i);
+			fp = filp_open(IN, O_RDONLY, 0);
 			old_fs = get_fs();
 			set_fs(get_ds());
 			vfs_read(fp, buf, 1, &fp->f_pos);
 			set_fs(old_fs);
-			filp_close(fp, NULL); */
-			if (in[0]&0x0F) break;
+			filp_close(fp, NULL);
+			DPRINTK("val: %s", buf);
+			if (buf[0]&0x0F) break;
 			DPRINTK("still waiting");
 			schedule();
 		}
 		un = "0";
 		sp = "1";
-		// kfree(buf);
-		// clr_val(IN);
-		// set_val(SP);
+		DPRINTK("before clr_val");
+		clr_val(IN);
+		DPRINTK("after clr_val");
 		goto done;
 	}
 
@@ -1947,33 +1841,17 @@ static struct target_type cache_target = {
 int __init dm_cache_init(void)
 {
 	int r;
-
 	
-	/* struct file *filp_i;
-	struct file *filp_s;
-	struct file *filp_d;
-	struct file *filp_u;
+	DPRINTK("before filp_init");
 
-	if ((filpopen(&filp_i, IN)) < 0)
+	if ((filp_init(IN)) < 0)
 		DPRINTK("error creating the file");
-	filp_close(filp_i, NULL);
 
-	if ((filpopen(&filp_s, SP)) < 0)
-		DPRINTK("error creating the file");
-	filp_close(filp_s, NULL);
-
-	if ((filpopen(&filp_d, DN)) < 0)
-		DPRINTK("error creating the file");
-	filp_close(filp_d, NULL);
-
-	if ((filpopen(&filp_u, UP)) < 0)
-		DPRINTK("error creating the file");
-	filp_close(filp_u, NULL);
-
+	DPRINTK("after filp_init");
+	
+	DPRINTK("before clr_val");
 	clr_val(IN);
-	clr_val(SP);
-	clr_val(DN);
-	clr_val(UP); */
+	DPRINTK("after clr_val");
 
 	proc_parent = proc_mkdir("dm-cache", NULL);
 
@@ -1986,29 +1864,15 @@ int __init dm_cache_init(void)
 	if (create_proc_read_entry("sp", 0, proc_parent, sp_read_proc, NULL) == 0)
 		printk(KERN_ERR "Unable to register \"sp\" proc file\n");
 
-	proc_input_entry = create_proc_entry("in", 0644, proc_parent);
+	/* proc_input_entry = create_proc_entry("in", 0644, proc_parent);
 	proc_input_entry->read_proc = (read_proc_t *)in_read_proc;
 	proc_input_entry->write_proc = (write_proc_t *)write_proc;
 	proc_input_entry->mode = S_IFREG | S_IRUGO | S_IWUSR;
 	proc_input_entry->uid = 0;
 	proc_input_entry->gid = 0;
-
-	// proc_input_entry->size = 1;
-
-	// DPRINTK(KERN_INFO "/proc/input created\n");
+	proc_input_entry->size = 1; */
 
 	time = 0;
-
-	/* memset(in_kobj, 0, sizeof(in_kobj));
-	kobj_init(in_kobj);
-	kobject_set_name(in_kobj, "in_kobj"); */
-
-	// in = kzalloc(sizeof(char), GFP_KERNEL);
-
-	/* sp = kzalloc(sizeof(char), GFP_KERNEL);
-	un = kzalloc(sizeof(char), GFP_KERNEL);
-	dn = kzalloc(sizeof(char), GFP_KERNEL); */
-
 	in[0] = '0';
 	sp = un = dn = "0";
 
@@ -2021,7 +1885,6 @@ int __init dm_cache_init(void)
 		return -ENOMEM;
 	}
 	INIT_WORK(&_kcached_work, do_work);
-
 	r = dm_register_target(&cache_target);
 	if (r < 0) {
 		DMERR("cache: register failed %d", r);
