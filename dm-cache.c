@@ -1014,9 +1014,8 @@ static int cache_hit(struct cache_c *dmc, struct bio* bio, sector_t cache_block)
 	struct file *fp;
 	char buf[1];
 	p = 100;
-	if (sp && time >= 20) {
+	if (sp && (current_kernel_time().tv_sec - time) >= 20) {
 		DPRINTK("time to spin down disk");
-		time = 0;
 		dn = "1";
 		/* block until spun down */
 		while (1) {
@@ -1259,7 +1258,7 @@ static int cache_miss(struct cache_c *dmc, struct bio* bio, sector_t cache_block
 	mm_segment_t old_fs;
 	i = 0, k = 100;
 	ts = current_kernel_time();
-	time = ts.tv_sec - time;
+	time = ts.tv_sec; // - time;
 	/* block until we are sure the disk is spinning */
 	DPRINTK("after getting kernel time");
 	if (!(sp[0]&0x0F)) {
@@ -1873,8 +1872,9 @@ int __init dm_cache_init(void)
 	proc_input_entry->size = 1; */
 
 	time = 0;
-	in[0] = '0';
-	sp = un = dn = "0";
+	// in[0] = '0';
+	sp = "1";
+	un = dn = "0";
 
 	r = jobs_init();
 	if (r)
