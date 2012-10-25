@@ -47,7 +47,7 @@
 // #include "dm-bio-list.h"
 #include <linux/dm-kcopyd.h>
 
-#define DMC_DEBUG 1
+#define DMC_DEBUG 0
 
 #define DM_MSG_PREFIX "cache"
 #define DMC_PREFIX "dm-cache: "
@@ -1007,36 +1007,8 @@ static void cache_invalidate(struct cache_c *dmc, sector_t cache_block)
  */
 static int cache_hit(struct cache_c *dmc, struct bio* bio, sector_t cache_block)
 {
-	int i,p, in_fd;
 	unsigned int offset;
-	mm_segment_t old_fs;
 	struct cacheblock *cache;
-	struct file *fp;
-	char buf[1];
-	p = 100;
-	if (sp && (current_kernel_time().tv_sec - time) >= 20) {
-		DPRINTK("time to spin down disk");
-		dn = "1";
-		/* block until spun down */
-		while (1) {
-			DPRINTK("cache_hit iteration: %d", ++i);
-
-			fp = filp_open(IN, O_RDONLY, 0);
-			old_fs = get_fs();
-			set_fs(get_ds());
-			vfs_read(fp, buf, 1, &fp->f_pos);
-			set_fs(old_fs);
-			filp_close(fp, NULL);
-			
-			DPRINTK("val: %s", buf);
-
-			if (buf[0]&0x0F) break;
-			DPRINTK("still waiting");
-			schedule();
-		}
-		dn = "0";
-		sp = "0";
-	}
 
 	offset = (unsigned int)(bio->bi_sector & dmc->block_mask);
 	cache = dmc->cache;
@@ -1260,9 +1232,7 @@ static int cache_miss(struct cache_c *dmc, struct bio* bio, sector_t cache_block
 	ts = current_kernel_time();
 	time = ts.tv_sec; // - time;
 	/* block until we are sure the disk is spinning */
-	DPRINTK("after getting kernel time");
 	if (!(sp[0]&0x0F)) {
-		DPRINTK("inside if statement");
 		un = "1";
 		clr_val(IN);
 		while (1) {
@@ -1876,6 +1846,8 @@ int __init dm_cache_init(void)
 	sp = "1";
 	un = dn = "0";
 
+	kthread = kthread_run(&check_time, NULL, "t_watchdog");
+
 	r = jobs_init();
 	if (r)
 		return r;
@@ -1898,6 +1870,9 @@ int __init dm_cache_init(void)
  */
 static void __exit dm_cache_exit(void)
 {
+	DPRINTK("before kthread_stop");
+	kthread_stop(kthread);
+	DPRINTK("after kthread_stop");
 	remove_proc_entry("up", proc_parent);
 	remove_proc_entry("dn", proc_parent);
 	remove_proc_entry("sp", proc_parent);

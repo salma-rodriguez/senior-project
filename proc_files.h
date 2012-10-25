@@ -1,4 +1,6 @@
 #include <linux/proc_fs.h>
+#include <linux/kernel.h>
+#include <linux/kthread.h>
 
 #define MAX_PROC_SIZE 1
 
@@ -10,6 +12,7 @@
 
 int time;
 char *un, *dn, *sp;
+struct task_struct *kthread;
 static char in[MAX_PROC_SIZE];
 struct proc_dir_entry *proc_parent;
 struct proc_dir_entry *proc_input_entry;
@@ -54,47 +57,64 @@ int filp_init(const char *name) {
 	int mode = O_RDWR | O_CREAT;
 	int permflags = S_IRUSR | S_IWUSR;
 	filp = filp_open(name, mode, permflags);
-	if (IS_ERR(filp))
-		return -EBADF;
 	filp_close(filp, NULL);
 	return 0;
 }
 
 int set_val(char *name) {
-	int ret, out_fd;
 	struct file *filp;
 	mm_segment_t old_fs;
-
 	filp = filp_open(name, O_WRONLY, 0);
 	old_fs = get_fs();
 	set_fs(get_ds());
-	//const char __user *
-	/* if ((vfs_write(filp, "1", 1, &filp->f_pos)) < 0) {
-		DPRINTK("I/O error");
-		ret = -EIO;
-	} */
 	vfs_write(filp, "1", 1, &filp->f_pos);
 	set_fs(old_fs);
 	filp_close(filp, NULL);
-
 	return 0;
 }
 
 int clr_val(char *name) {
-	int ret, out_fd;
 	struct file *filp;
 	mm_segment_t old_fs;
 	filp = filp_open(name, O_WRONLY, 0);
 	old_fs = get_fs();
 	set_fs(get_ds());
 	vfs_write(filp, "0", 1, &filp->f_pos);
-	// const char __user *
-	/* if ((vfs_write(filp, "0", 1, &filp->f_pos)) < 0) {
-		DPRINTK("I/O error");
-		ret = -EIO;
-	} */
 	set_fs(old_fs);
 	filp_close(filp, NULL);
 	return 0;
 }
 
+int check_time(void *data) {
+	while (1) {
+		int i;
+		char *buf;
+		struct file *fp;
+		mm_segment_t old_fs;
+		i = 0;
+		printk("elapsed: %d\n", current_kernel_time().tv_sec -time);
+		if (sp && (current_kernel_time().tv_sec - time) >= 20) {
+			printk("time to spin down disk\n");
+			dn = "1";
+			/* block until spun down */
+			while (1) {
+				printk("check_time iteration: %d\n", ++i);
+				fp = filp_open(IN, O_RDONLY, 0);
+				printk("after filp_open\n");
+				old_fs = get_fs();
+				set_fs(get_ds());
+				vfs_read(fp, buf, 1, &fp->f_pos);
+				set_fs(old_fs);
+				printk("after vfs_read");
+				filp_close(fp, NULL);
+				printk("after filp_close");
+				if (buf[0]&0x0F) break;
+				printk("still waiting\n");
+				schedule();
+			}
+			dn = "0";
+			sp = "0";
+		}
+		schedule();
+	}
+}
