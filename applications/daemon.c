@@ -8,8 +8,13 @@
 #include <netdb.h>
 #include <unistd.h>
 #include <fcntl.h>
+#include <pthread.h>
 
 #define BUFSIZE 1024
+#define UP "/proc/dm-cache/up"
+#define DN "/proc/dm-cache/dn"
+#define IN "/home/salma/Documents/in"
+#define SP "/proc/dm-cache/sp"
 
 void error(char *msg) {
 	perror(msg);
@@ -57,26 +62,41 @@ int send_req(char *hostname, int portno) {
 }
 
 int main(int argc, char **argv) {
+	long long count;
 	int fd, fr, portno;
-	char *hostname, buf[1];
+	// pthread_mutex_t mux;
+	char *hostname, sp[1], up[1], dn[1];
 	if (argc != 3) 
 		fprintf(stderr, "usage: %s <hostname> <port>\n", argv[0]);
+	sp[0] = 0x30;
 	hostname = argv[1];
 	portno = atoi(argv[2]);
 	while(1) {
-		/* may need to make this atomic */
-		fr = open("/home/salma/Documents/input", O_RDWR);
-		fd = open("/home/salma/Documents/output", O_RDWR);
-		read(fd, buf, 1);
-		if (!(buf[0]^'1')) {
-			printf("sending request...\n");
-			send_req(hostname, portno);
-			sleep(2);
-			write(fr, "1", 1);
-			write(fd, "0", 1);
-		}
+		fd = open(SP, O_RDWR);
+		read(fd, sp, 1);
 		close(fd);
-		close(fr);
-		/* end of atomic operation */
+		if (!(sp[0]&0x0F)) /* spin up mode */ {
+			fd = open(UP, O_RDWR);
+			read(fd, up, 1);
+			close(fd);
+			if (up[0]&0x0F) {
+				printf("sending request...\n");
+				send_req(hostname, portno);
+				fr = open(IN, O_RDWR);
+				write(fr, "1", 1); /* may continue handling cache miss */
+				close(fr);
+			}
+		} else /* spin down mode */ {
+			fd = open(DN, O_RDWR);
+			read(fd, dn, 1);
+			close(fd);
+			if (dn[0]&0x0F) {
+				printf("sending request...\n");
+				send_req(hostname, portno);
+				fr = open(IN, O_RDWR);
+				write(fr, "1", 1); /* may continue handling cache hit */
+				close(fr);
+			}
+		}
 	}
 }
