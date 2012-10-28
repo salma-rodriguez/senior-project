@@ -1,15 +1,3 @@
-<<<<<<< HEAD
-=======
-/* A simple server in the internet domain using TCP
-   The port number is passed as an argument
-   This version runs forever, forking off a separate
-   process for each connection
-*/
-
-#define MAX 100
-#define BUFSIZE 1024
-#define MIN(a,b) a < b ? a:b
->>>>>>> 120189600fecc0c9d5641be624dd0bad9825c7c3
 #include <stdio.h>
 #include <fcntl.h>
 #include <unistd.h>
@@ -21,7 +9,6 @@
 #include <sys/socket.h>
 #include <netinet/in.h>
 
-<<<<<<< HEAD
 #define MAX 100
 #define BUFSIZE 1024
 #define MIN(a,b) a < b ? a:b
@@ -31,12 +18,6 @@
 #define DPRINTF(s, arg...) printf(s "\n", ##arg);
 #else
 #define DPRINTF(s, arg...) /* do nothing */
-=======
-#define DEBUG 1
-
-#if DEBUG
-#define DPRINTF(s, arg...) printf(s "\n", ##arg);
->>>>>>> 120189600fecc0c9d5641be624dd0bad9825c7c3
 #endif
 
 void handler(int); /* function prototype */
@@ -115,19 +96,9 @@ void handler (int sock)
 
         if ((n = read(sock, buf, BUFSIZE - 1)) < 0)
                 error("ERROR reading from socket");
-<<<<<<< HEAD
         DPRINTF("message received: %s", buf);
         // send message back to client
         if ((n = write(sock, "got it!", 7)) < 0)
                 error("ERROR writing to socket");
         DPRINTF("write to client successfull");
-=======
-
-        DPRINTF("message received: %s", buf);
-
-        // send message back to client
-        if ((n = write(sock, "got it!", 7)) < 0)
-                error("ERROR writing to socket");
-
->>>>>>> 120189600fecc0c9d5641be624dd0bad9825c7c3
 }

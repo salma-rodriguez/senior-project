@@ -2,34 +2,22 @@
 #include <linux/kernel.h>
 #include <linux/kthread.h>
 
-// #define MAX_PROC_SIZE 1
+#define MAX_PROC_SIZE 1
 
 #define UP "/proc/dm-cache/up"
 #define DN "/proc/dm-cache/dn"
 #define IN "/home/senior-project/in"
-<<<<<<< HEAD
 #define OT "/proc/dm-cache/ot"
 #define SP "/proc/dm-cache/sp"
 
 long time;
 // char ot[1];
-=======
-// #define IN "/proc/dm-cache/in"
-#define SP "/proc/dm-cache/sp"
-
-long time;
-spinlock_t proc_lock;
->>>>>>> 120189600fecc0c9d5641be624dd0bad9825c7c3
 char *un, *dn, *sp;
 int clr_val(char *);
 int set_val(char *);
 spinlock_t proc_lock;
 struct task_struct *kthread;
-<<<<<<< HEAD
 static char ot[MAX_PROC_SIZE];
-=======
-// static char in[MAX_PROC_SIZE];
->>>>>>> 120189600fecc0c9d5641be624dd0bad9825c7c3
 struct proc_dir_entry *proc_parent;
 struct proc_dir_entry *proc_input_entry;
 
@@ -44,13 +32,13 @@ static int read_proc(char *str, char *buffer, char **start, off_t offset, int si
 	return len;
 }
 
-/* static int write_proc(struct file *file, const char __user *buffer, unsigned long count, void *data) {
+static int write_proc(struct file *file, const char __user *buffer, unsigned long count, void *data) {
 	if (count > MAX_PROC_SIZE)
 		count = MAX_PROC_SIZE;
 	if (copy_from_user(ot, buffer, count))
 		return -EFAULT;
 	return count;
-} */
+}
 
 static int up_read_proc(char *buffer, char **start, off_t offset, int size, int *eof, void *data) {
 	return read_proc(un, buffer, start, offset, size, eof, data);
