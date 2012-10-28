@@ -5,21 +5,17 @@
 #include <unistd.h>
 #include <stdlib.h>
 
-int main(void) {
-	int fd;
-	char s = '1';
-	fd = open("/media/dmmount", O_RDWR | O_CREAT);
-	// for (i = 0; i < count; i++) {
-		// lseek(fd, 0, SEEK_SET);
+int main(int argc, char **argv) {
+	char s;
+	int i, fd;
+	s = '1';
+	for (i = 0; i < atoi(argv[1]); i++) {
+		fd = open("/media/dmmount/file", O_WRONLY | O_CREAT, 0666);
 		write(fd, &s, 1);
-	// }
-	close(fd);
-	sleep(20);
-	fd = open("/media/dmmount", O_RDWR);
-	// for (i = 0; i < count; i++) {
-		// lseek(fd, 0, SEEK_SET);
+		close(fd);
+		sleep(30);
+		fd = open("/media/dmmount/file", O_WRONLY);
 		write(fd, &s, 1);
-	// }
-	close(fd);
-	// close(fg);
+		close(fd);
+	}
 }

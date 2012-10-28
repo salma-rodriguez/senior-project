@@ -47,7 +47,7 @@
 // #include "dm-bio-list.h"
 #include <linux/dm-kcopyd.h>
 
-#define DMC_DEBUG 0
+#define DMC_DEBUG 1
 
 #define DM_MSG_PREFIX "cache"
 #define DMC_PREFIX "dm-cache: "
@@ -426,8 +426,8 @@ static int do_fetch(struct kcached_job *job)
 	tail = to_bytes(dmc->block_size) - bio->bi_size - head;
 
 	DPRINTK("do_fetch: %llu(%llu->%llu,%llu), head:%u,tail:%u",
-	        bio->bi_sector, job->src.sector, job->dest.sector,
-	        job->src.count, head, tail);
+	        (__u64)bio->bi_sector, (__u64)job->src.sector, (__u64)job->dest.sector,
+	        (__u64)job->src.count, head, tail);
 
 	if (bio_data_dir(bio) == READ) { /* The original request is a READ */
 		if (0 == job->nr_pages) { /* The request is aligned to cache block */
@@ -566,8 +566,8 @@ static int do_store(struct kcached_job *job)
 	tail = to_bytes(dmc->block_size) - bio->bi_size - head;
 
 	DPRINTK("do_store: %llu(%llu->%llu,%llu), head:%u,tail:%u",
-	        bio->bi_sector, job->src.sector, job->dest.sector,
-	        job->src.count, head, tail);
+	        (__u64)bio->bi_sector, (__u64)job->src.sector, (__u64)job->dest.sector,
+	        (__u64)job->src.count, (__u32)head, (__u32)tail);
 
 	/* A READ is acknowledged as soon as the requested data is fetched, and
 	   does not have to wait for it being stored in cache. The bio is cloned
@@ -581,7 +581,7 @@ static int do_store(struct kcached_job *job)
 		for (i=bio->bi_idx; i<bio->bi_vcnt; i++) {
 			get_page(bio->bi_io_vec[i].bv_page);
 		}
-		DPRINTK("bio ended for %llu:%u", bio->bi_sector, bio->bi_size);
+		DPRINTK("bio ended for %llu:%u", (__u64)bio->bi_sector, bio->bi_size);
 		bio_endio(bio, 0);
 		bio = clone;
 		job->bio = clone;
@@ -688,7 +688,7 @@ static void flush_bios(struct cacheblock *cacheblock)
 		n = bio->bi_next;
 		bio->bi_next = NULL;
 		DPRINTK("Flush bio: %llu->%llu (%u bytes)",
-		        cacheblock->block, bio->bi_sector, bio->bi_size);
+		        (__u64)cacheblock->block, (__u64)bio->bi_sector, bio->bi_size);
 		generic_make_request(bio);
 		bio = n;
 	}
@@ -699,7 +699,7 @@ static int do_complete(struct kcached_job *job)
 	int i, r = 0;
 	struct bio *bio = job->bio;
 
-	DPRINTK("do_complete: %llu", bio->bi_sector);
+	DPRINTK("do_complete: %llu", (__u64)bio->bi_sector);
 
 	if (bio_data_dir(bio) == READ) {
 		for (i=bio->bi_idx; i<bio->bi_vcnt; i++) {
@@ -800,7 +800,6 @@ void kcached_client_destroy(struct cache_c *dmc)
 	free_bio_pages(dmc);
 }
 
-
 /****************************************************************************
  * Functions for writing back dirty blocks.
  * We leverage kcopyd to write back dirty blocks because it is convenient to
@@ -820,7 +819,8 @@ static void copy_block(struct cache_c *dmc, struct dm_io_region src,
 	                   struct dm_io_region dest, struct cacheblock *cacheblock)
 {
 	DPRINTK("Copying: %llu:%llu->%llu:%llu",
-			src.sector, src.count * 512, dest.sector, dest.count * 512);
+			(__u64)src.sector, (__u64)src.count * 512ULL,
+			(__u64)dest.sector, (__u64)dest.count * 512ULL);
 	dm_kcopyd_copy(dmc->kcp_client, &src, 1, &dest, 0, \
 			(dm_kcopyd_notify_fn) copy_callback, (void *)cacheblock);
 }
@@ -832,7 +832,7 @@ static void write_back(struct cache_c *dmc, sector_t index, unsigned int length)
 	unsigned int i;
 
 	DPRINTK("Write back block %llu(%llu, %u)",
-	        index, cacheblock->block, length);
+	        (__u64)index, (__u64)cacheblock->block, length);
 	src.bdev = dmc->cache_dev->bdev;
 	src.sector = index << dmc->block_shift;
 	src.count = dmc->block_size * length;
@@ -958,10 +958,10 @@ static int cache_lookup(struct cache_c *dmc, sector_t block,
 
 	if (-1 == res)
 		DPRINTK("Cache lookup: Block %llu(%lu):%s",
-	            block, set_number, "NO ROOM");
+	            (__u64)block, set_number, "NO ROOM");
 	else
 		DPRINTK("Cache lookup: Block %llu(%lu):%llu(%s)",
-		        block, set_number, *cache_block,
+		        (__u64)block, set_number, (__u64)*cache_block,
 		        1 == res ? "HIT" : (0 == res ? "MISS" : "WB NEEDED"));
 	return res;
 }
@@ -993,7 +993,7 @@ static void cache_invalidate(struct cache_c *dmc, sector_t cache_block)
 	struct cacheblock *cache = dmc->cache;
 
 	DPRINTK("Cache invalidate: Block %llu(%llu)",
-	        cache_block, cache[cache_block].block);
+	        (__u64)cache_block, (__u64)cache[cache_block].block);
 	clear_state(cache[cache_block].state, VALID);
 }
 
@@ -1028,7 +1028,7 @@ static int cache_hit(struct cache_c *dmc, struct bio* bio, sector_t cache_block)
 
 		/* Cache block is not ready yet */
 		DPRINTK("Add to bio list %s(%llu)",
-				dmc->cache_dev->name, bio->bi_sector);
+				dmc->cache_dev->name, (__u64)bio->bi_sector);
 		bio_list_add(&cache[cache_block].bios, bio);
 
 		spin_unlock(&cache[cache_block].lock);
@@ -1053,7 +1053,7 @@ static int cache_hit(struct cache_c *dmc, struct bio* bio, sector_t cache_block)
 			/* Delay this write until the block is written back */
 			bio->bi_bdev = dmc->src_dev->bdev;
 			DPRINTK("Add to bio list %s(%llu)",
-					dmc->src_dev->name, bio->bi_sector);
+					dmc->src_dev->name, (__u64)bio->bi_sector);
 			bio_list_add(&cache[cache_block].bios, bio);
 			spin_unlock(&cache[cache_block].lock);
 			return 0;
@@ -1064,7 +1064,7 @@ static int cache_hit(struct cache_c *dmc, struct bio* bio, sector_t cache_block)
 			bio->bi_bdev = dmc->cache_dev->bdev;
 			bio->bi_sector = (cache_block << dmc->block_shift) + offset;
 			DPRINTK("Add to bio list %s(%llu)",
-					dmc->cache_dev->name, bio->bi_sector);
+					dmc->cache_dev->name, (__u64)bio->bi_sector);
 			bio_list_add(&cache[cache_block].bios, bio);
 			spin_unlock(&cache[cache_block].lock);
 			return 0;
@@ -1120,10 +1120,10 @@ static int cache_read_miss(struct cache_c *dmc, struct bio* bio,
 
 	if (cache[cache_block].state & VALID) {
 		DPRINTK("Replacing %llu->%llu",
-		        cache[cache_block].block, request_block);
+		        (__u64)cache[cache_block].block, (__u64)request_block);
 		dmc->replace++;
 	} else DPRINTK("Insert block %llu at empty frame %llu",
-		request_block, cache_block);
+		(__u64)request_block, (__u64)cache_block);
 
 	cache_insert(dmc, request_block, cache_block); /* Update metadata first */
 
@@ -1147,7 +1147,7 @@ static int cache_read_miss(struct cache_c *dmc, struct bio* bio,
 	job->rw = READ; /* Fetch data from the source device */
 
 	DPRINTK("Queue job for %llu (need %u pages)",
-	        bio->bi_sector, job->nr_pages);
+	        (__u64)bio->bi_sector, job->nr_pages);
 	queue_job(job);
 
 	return 0;
@@ -1175,10 +1175,10 @@ static int cache_write_miss(struct cache_c *dmc, struct bio* bio, sector_t cache
 
 	if (cache[cache_block].state & VALID) {
 		DPRINTK("Replacing %llu->%llu",
-		        cache[cache_block].block, request_block);
+		        (__u64)cache[cache_block].block, (__u64)request_block);
 		dmc->replace++;
 	} else DPRINTK("Insert block %llu at empty frame %llu",
-		request_block, cache_block);
+		(__u64)request_block, (__u64)cache_block);
 
 	/* Write delay */
 	cache_insert(dmc, request_block, cache_block); /* Update metadata first */
@@ -1223,40 +1223,8 @@ static int cache_write_miss(struct cache_c *dmc, struct bio* bio, sector_t cache
 static int cache_miss(struct cache_c *dmc, struct bio* bio, sector_t cache_block) {
 	/* time to notify server to spin up disk if spun down */
 	/* function to write single byte to file so daemon can trigger a command */
-	int i, k;
-	char buf[1];
-	struct file *fp;
-	struct timespec ts;
-	mm_segment_t old_fs;
-	i = 0, k = 100;
-	ts = current_kernel_time();
-	time = ts.tv_sec; // - time;
-	/* block until we are sure the disk is spinning */
-	if (!(sp[0]&0x0F)) {
-		un = "1";
-		clr_val(IN);
-		while (1) {
-			DPRINTK("cache_miss iteration: %d", ++i);
-			fp = filp_open(IN, O_RDONLY, 0);
-			old_fs = get_fs();
-			set_fs(get_ds());
-			vfs_read(fp, buf, 1, &fp->f_pos);
-			set_fs(old_fs);
-			filp_close(fp, NULL);
-			DPRINTK("val: %s", buf);
-			if (buf[0]&0x0F) break;
-			DPRINTK("still waiting");
-			schedule();
-		}
-		un = "0";
-		sp = "1";
-		DPRINTK("before clr_val");
-		clr_val(IN);
-		DPRINTK("after clr_val");
-		goto done;
-	}
-
-done:
+	time = current_kernel_time().tv_sec;
+	handle_cache_miss();
 	if (bio_data_dir(bio) == READ)
 		return cache_read_miss(dmc, bio, cache_block);
 	else
@@ -1282,7 +1250,7 @@ static int cache_map(struct dm_target *ti, struct bio *bio,
 
 	DPRINTK("Got a %s for %llu ((%llu:%llu), %u bytes)",
 	        bio_rw(bio) == WRITE ? "WRITE" : (bio_rw(bio) == READ ?
-	        "READ":"READA"), bio->bi_sector, request_block, offset,
+	        "READ":"READA"), (__u64)bio->bi_sector, (__u64)request_block, (__u64)offset,
 	        bio->bi_size);
 
 	if (bio_data_dir(bio) == READ) dmc->reads++;
@@ -1333,7 +1301,7 @@ static int load_metadata(struct cache_c *dmc) {
 	dm_io_sync_vm(1, &where, READ, meta_dmc, &bits, dmc);
 	DPRINTK("Loaded cache conf: block size(%u), cache size(%llu), " \
 	        "associativity(%u), write policy(%u), chksum(%u)",
-	        meta_dmc->block_size, meta_dmc->size,
+	        meta_dmc->block_size, (__u64)meta_dmc->size,
 	        meta_dmc->assoc, meta_dmc->write_policy,
 	        meta_dmc->chksum);
 
@@ -1812,15 +1780,11 @@ int __init dm_cache_init(void)
 	int r;
 	
 	DPRINTK("before filp_init");
-
 	if ((filp_init(IN)) < 0)
 		DPRINTK("error creating the file");
-
 	DPRINTK("after filp_init");
 	
-	DPRINTK("before clr_val");
 	clr_val(IN);
-	DPRINTK("after clr_val");
 
 	proc_parent = proc_mkdir("dm-cache", NULL);
 
@@ -1833,18 +1797,20 @@ int __init dm_cache_init(void)
 	if (create_proc_read_entry("sp", 0, proc_parent, sp_read_proc, NULL) == 0)
 		printk(KERN_ERR "Unable to register \"sp\" proc file\n");
 
-	/* proc_input_entry = create_proc_entry("in", 0644, proc_parent);
-	proc_input_entry->read_proc = (read_proc_t *)in_read_proc;
+	proc_input_entry = create_proc_entry("ot", 0666, proc_parent);
+	// proc_input_entry->read_proc = (read_proc_t *)in_read_proc;
 	proc_input_entry->write_proc = (write_proc_t *)write_proc;
 	proc_input_entry->mode = S_IFREG | S_IRUGO | S_IWUSR;
-	proc_input_entry->uid = 0;
+	/* proc_input_entry->uid = 0;
 	proc_input_entry->gid = 0;
 	proc_input_entry->size = 1; */
 
-	time = 0;
-	// in[0] = '0';
+	time = current_kernel_time().tv_sec;
+	ot[0] = '0';
 	sp = "1";
 	un = dn = "0";
+
+	spin_lock_init(&proc_lock);
 
 	kthread = kthread_run(&check_time, NULL, "t_watchdog");
 
@@ -1876,7 +1842,7 @@ static void __exit dm_cache_exit(void)
 	remove_proc_entry("up", proc_parent);
 	remove_proc_entry("dn", proc_parent);
 	remove_proc_entry("sp", proc_parent);
-	remove_proc_entry("in", proc_parent);
+	remove_proc_entry("ot", proc_parent);
 	remove_proc_entry("dm-cache", NULL);
 	dm_unregister_target(&cache_target);
 

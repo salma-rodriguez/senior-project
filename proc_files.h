@@ -6,14 +6,18 @@
 
 #define UP "/proc/dm-cache/up"
 #define DN "/proc/dm-cache/dn"
-#define IN "/home/salma/Documents/in"
-// #define IN "/proc/dm-cache/in"
+#define IN "/home/senior-project/in"
+#define OT "/proc/dm-cache/ot"
 #define SP "/proc/dm-cache/sp"
 
-int time;
+long time;
+// char ot[1];
 char *un, *dn, *sp;
+int clr_val(char *);
+int set_val(char *);
+spinlock_t proc_lock;
 struct task_struct *kthread;
-static char in[MAX_PROC_SIZE];
+static char ot[MAX_PROC_SIZE];
 struct proc_dir_entry *proc_parent;
 struct proc_dir_entry *proc_input_entry;
 
@@ -31,7 +35,7 @@ static int read_proc(char *str, char *buffer, char **start, off_t offset, int si
 static int write_proc(struct file *file, const char __user *buffer, unsigned long count, void *data) {
 	if (count > MAX_PROC_SIZE)
 		count = MAX_PROC_SIZE;
-	if (copy_from_user(in, buffer, count))
+	if (copy_from_user(ot, buffer, count))
 		return -EFAULT;
 	return count;
 }
@@ -48,9 +52,9 @@ static int sp_read_proc(char *buffer, char **start, off_t offset, int size, int 
 	return read_proc(sp, buffer, start, offset, size, eof, data);
 }
 
-static int in_read_proc(char *buffer, char **start, off_t offset, int size, int *eof, void *data) {
+/* static int in_read_proc(char *buffer, char **start, off_t offset, int size, int *eof, void *data) {
 	return read_proc(in, buffer, start, offset, size, eof, data);
-}
+} */
 
 int filp_init(const char *name) {
 	struct file *filp;
@@ -85,36 +89,68 @@ int clr_val(char *name) {
 	return 0;
 }
 
+void handle_cache_miss(void) {
+	int i, k;
+	char buf[1];
+	struct file *fp;
+	mm_segment_t old_fs;
+	i = 0, k = 100;
+	/* block until we are sure the disk is spinning */
+	if (!(sp[0]&0x0F)) {
+		spin_lock(&proc_lock);
+		printk(KERN_INFO "time to spin up disk!\n");
+		un = "1";
+		clr_val(IN);
+		while (1) {
+			// printk(KERN_INFO "cache_miss iteration: %d\n", ++i);
+			fp = filp_open(IN, O_RDONLY, 0);
+			old_fs = get_fs();
+			set_fs(get_ds());
+			vfs_read(fp, buf, 1, &fp->f_pos);
+			set_fs(old_fs);
+			filp_close(fp, NULL);
+			if (buf[0]&0x0F) break;
+			schedule();
+		}
+		un = "0", sp = "1";
+		clr_val(IN);
+		printk(KERN_INFO "disk has spun up\n");
+		spin_unlock(&proc_lock);
+	}
+}
+
 int check_time(void *data) {
 	while (1) {
 		int i;
-		char *buf;
+		char buf[1];
 		struct file *fp;
 		mm_segment_t old_fs;
 		i = 0;
-		printk("elapsed: %d\n", current_kernel_time().tv_sec -time);
-		if (sp && (current_kernel_time().tv_sec - time) >= 20) {
-			printk("time to spin down disk\n");
-			dn = "1";
+		// printk("elapsed: %lu\n", (long)current_kernel_time().tv_sec - time);
+		if (sp[0]&0x0F && ((long)current_kernel_time().tv_sec - time >= 20)) {
 			/* block until spun down */
+			spin_lock(&proc_lock);
+			printk(KERN_INFO "time to spin down disk\n");
+			dn = "1";
+			clr_val(IN);
 			while (1) {
-				printk("check_time iteration: %d\n", ++i);
+				// printk("check_time iteration: %d\n", ++i);
 				fp = filp_open(IN, O_RDONLY, 0);
-				printk("after filp_open\n");
 				old_fs = get_fs();
 				set_fs(get_ds());
 				vfs_read(fp, buf, 1, &fp->f_pos);
 				set_fs(old_fs);
-				printk("after vfs_read");
 				filp_close(fp, NULL);
-				printk("after filp_close");
-				if (buf[0]&0x0F) break;
-				printk("still waiting\n");
+				if (buf[0]&0x0F || kthread_should_stop()) break;
 				schedule();
 			}
-			dn = "0";
-			sp = "0";
+			dn = "0", sp = "0";
+			clr_val(IN);
+			printk(KERN_INFO "disk has spun down\n");
+			spin_unlock(&proc_lock);
 		}
+		if (kthread_should_stop()) break;
 		schedule();
 	}
+	return 0;
 }
