@@ -100,5 +100,4 @@ void handler (int sock)
         // send message back to client
         if ((n = write(sock, "got it!", 7)) < 0)
                 error("ERROR writing to socket");
-        DPRINTF("write to client successfull");
 }

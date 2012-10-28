@@ -1778,42 +1778,8 @@ static struct target_type cache_target = {
 int __init dm_cache_init(void)
 {
 	int r;
-	
-	DPRINTK("before filp_init");
-	if ((filp_init(IN)) < 0)
-		DPRINTK("error creating the file");
-	DPRINTK("after filp_init");
-	
-	clr_val(IN);
 
-	proc_parent = proc_mkdir("dm-cache", NULL);
-
-	if (create_proc_read_entry("up", 0, proc_parent, up_read_proc, NULL) == 0)
-		printk(KERN_ERR "Unable to register \"up\" proc file\n");
-
-	if (create_proc_read_entry("dn", 0, proc_parent, dn_read_proc, NULL) == 0)
-		printk(KERN_ERR "Unable to register \"dn\" proc file\n");
-
-	if (create_proc_read_entry("sp", 0, proc_parent, sp_read_proc, NULL) == 0)
-		printk(KERN_ERR "Unable to register \"sp\" proc file\n");
-
-	proc_input_entry = create_proc_entry("ot", 0666, proc_parent);
-	// proc_input_entry->read_proc = (read_proc_t *)in_read_proc;
-	proc_input_entry->write_proc = (write_proc_t *)write_proc;
-	proc_input_entry->mode = S_IFREG | S_IRUGO | S_IWUSR;
-	/* proc_input_entry->uid = 0;
-	proc_input_entry->gid = 0;
-	proc_input_entry->size = 1; */
-
-	time = current_kernel_time().tv_sec;
-	ot[0] = '0';
-	sp = "1";
-	un = dn = "0";
-
-	spin_lock_init(&proc_lock);
-
-	kthread = kthread_run(&check_time, NULL, "t_watchdog");
-
+	PROC_INIT();
 	r = jobs_init();
 	if (r)
 		return r;
@@ -1836,16 +1802,13 @@ int __init dm_cache_init(void)
  */
 static void __exit dm_cache_exit(void)
 {
-	DPRINTK("before kthread_stop");
 	kthread_stop(kthread);
-	DPRINTK("after kthread_stop");
 	remove_proc_entry("up", proc_parent);
 	remove_proc_entry("dn", proc_parent);
 	remove_proc_entry("sp", proc_parent);
 	remove_proc_entry("ot", proc_parent);
 	remove_proc_entry("dm-cache", NULL);
 	dm_unregister_target(&cache_target);
-
 	jobs_exit();
 	destroy_workqueue(_kcached_wq);
 }

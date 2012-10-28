@@ -13,7 +13,7 @@
 #define BUFSIZE 1024
 #define UP "/proc/dm-cache/up"
 #define DN "/proc/dm-cache/dn"
-#define IN "/home/senior-project/in"
+#define IN "/proc/dm-cache/ot"
 #define SP "/proc/dm-cache/sp"
 #define DEBUG 0
 
@@ -68,7 +68,7 @@ int send_req(char *hostname, int portno) {
 	if ((n = read(sockfd, buf, BUFSIZE)) < 0)
 		error("ERROR receiving acknowledgement from server");
 
-	DPRINTF("Echo from server: %s\n", buf);
+	DPRINTF("Echo from server: %s", buf);
 	close(sockfd);
 	return 0;
 }
