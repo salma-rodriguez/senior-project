@@ -90,8 +90,13 @@ void send_req_for(const char *name) {
 }
 
 int main(int argc, char **argv) {
+<<<<<<< HEAD
 	int fd;
 	char sp[1];
+=======
+	int fd, fr, portno;
+	char *hostname, sp[1], up[1], dn[1];
+>>>>>>> 120189600fecc0c9d5641be624dd0bad9825c7c3
 	if (argc != 3) 
 		fprintf(stderr, "usage: %s <hostname> <port>\n", argv[0]);
 	sp[0] = 0x30;
@@ -101,9 +106,35 @@ int main(int argc, char **argv) {
 		fd = open(SP, O_RDWR);
 		read(fd, sp, 1);
 		close(fd);
+<<<<<<< HEAD
 		if (!(sp[0]&0x0F)) /* disk not spinning */
 			send_req_for(UP);	
 		else /* disk is spinning */
 			send_req_for(DN);
+=======
+		if (!(sp[0]&0x0F)) /* spin up mode */ {
+			fd = open(UP, O_RDWR);
+			read(fd, up, 1);
+			close(fd);
+			if (up[0]&0x0F) {
+				// printf("sending request...\n");
+				send_req(hostname, portno);
+				fr = open(IN, O_RDWR);
+				write(fr, "1", 1); /* may continue handling cache miss */
+				close(fr);
+			}
+		} else /* spin down mode */ {
+			fd = open(DN, O_RDWR);
+			read(fd, dn, 1);
+			close(fd);
+			if (dn[0]&0x0F) {
+				// printf("sending request...\n");
+				send_req(hostname, portno);
+				fr = open(IN, O_RDWR);
+				write(fr, "1", 1); /* may continue handling cache hit */
+				close(fr);
+			}
+		}
+>>>>>>> 120189600fecc0c9d5641be624dd0bad9825c7c3
 	}
 }

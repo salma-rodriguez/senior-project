@@ -1223,8 +1223,39 @@ static int cache_write_miss(struct cache_c *dmc, struct bio* bio, sector_t cache
 static int cache_miss(struct cache_c *dmc, struct bio* bio, sector_t cache_block) {
 	/* time to notify server to spin up disk if spun down */
 	/* function to write single byte to file so daemon can trigger a command */
+<<<<<<< HEAD
 	time = current_kernel_time().tv_sec;
 	handle_cache_miss();
+=======
+	int i, k;
+	char buf[1];
+	struct file *fp;
+	mm_segment_t old_fs;
+	time = current_kernel_time().tv_sec;
+	i = 0, k = 100;
+	/* block until we are sure the disk is spinning */
+	if (!(sp[0]&0x0F)) {
+		spin_lock(&proc_lock);
+		DPRINTK("time to spin up disk!");
+		un = "1";
+		clr_val(IN);
+		while (1) {
+			// DPRINTK("cache_miss iteration: %d", ++i);
+			fp = filp_open(IN, O_RDONLY, 0);
+			old_fs = get_fs();
+			set_fs(get_ds());
+			vfs_read(fp, buf, 1, &fp->f_pos);
+			set_fs(old_fs);
+			filp_close(fp, NULL);
+			if (buf[0]&0x0F) break;
+			schedule();
+		}
+		un = "0", sp = "1";
+		clr_val(IN);
+		DPRINTK("disk has spun up");
+		spin_unlock(&proc_lock);
+	}
+>>>>>>> 120189600fecc0c9d5641be624dd0bad9825c7c3
 	if (bio_data_dir(bio) == READ)
 		return cache_read_miss(dmc, bio, cache_block);
 	else
@@ -1806,7 +1837,11 @@ int __init dm_cache_init(void)
 	proc_input_entry->size = 1; */
 
 	time = current_kernel_time().tv_sec;
+<<<<<<< HEAD
 	ot[0] = '0';
+=======
+	// in[0] = '0';
+>>>>>>> 120189600fecc0c9d5641be624dd0bad9825c7c3
 	sp = "1";
 	un = dn = "0";
 
