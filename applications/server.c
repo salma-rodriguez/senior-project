@@ -2,7 +2,7 @@
    The port number is passed as an argument
    This version runs forever, forking off a separate
    process for each connection
-   */
+*/
 
 #define MAX 100
 #define BUFSIZE 1024
@@ -18,27 +18,15 @@
 #include <sys/socket.h>
 #include <netinet/in.h>
 
+#define DEBUG 1
+
+#if DEBUG
+#define DPRINTF(s, arg...) printf(s "\n", ##arg);
+#endif
+
 void handler(int); /* function prototype */
 
-void error(const char *msg)
-{
-	perror(msg);
-	exit(1);
-}
-
-int openfile(const char *path) {
-	int oflags = O_CREAT | O_RDWR | O_TRUNC;
-	int pflags = S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH;
-	return open(path, oflags, pflags);
-}
-
-int opendir(const char *path) {
-        int oflags = O_CREAT | O_RDWR | O_DIRECTORY;
-        int pflags = S_IRWXU | S_IRGRP | S_IROTH;
-        return open(path, oflags, pflags);
-}
-
-char* concat(int numargs, char* str, ...) {
+char* concat(int numargs, const char* str, ...) {
         char *s;
         char *cat;
         va_list argp;
@@ -52,15 +40,20 @@ char* concat(int numargs, char* str, ...) {
         return s;
 }
 
+void error(const char *msg)
+{
+	perror(concat(2, msg, "\n"));
+	exit(1);
+}
+
 int main(int argc, char *argv[])
 {
-	int bread;
 	int sockfd, newsockfd, portno, pid;
 	socklen_t clilen;
 	struct sockaddr_in serv_addr, cli_addr;
 
 	if (argc < 2) {
-		fprintf(stderr,"ERROR, no port provided\n");
+		error("ERROR, no port provided");
 		exit(1);
 	}
 	sockfd = socket(AF_INET, SOCK_STREAM, 0);
@@ -103,17 +96,17 @@ int main(int argc, char *argv[])
  **************************************************/
 void handler (int sock)
 {
-        char *buf[BUFSIZE];
-        int fd, n, newsock;
+        int n;
+        char buf[BUFSIZE];
         bzero(buf, BUFSIZE);
 
         if ((n = read(sock, buf, BUFSIZE - 1)) < 0)
-                error("ERROR reading from socket\n");
+                error("ERROR reading from socket");
 
-        fprintf(stdout, "message received: %s\n", buf);
+        DPRINTF("message received: %s", buf);
 
-        // send acknowledgement back to client
+        // send message back to client
         if ((n = write(sock, "got it!", 7)) < 0)
-                error("ERROR writing to socket\n");
+                error("ERROR writing to socket");
 
 }

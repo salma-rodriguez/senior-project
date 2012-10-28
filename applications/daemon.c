@@ -13,7 +13,7 @@
 #define BUFSIZE 1024
 #define UP "/proc/dm-cache/up"
 #define DN "/proc/dm-cache/dn"
-#define IN "/home/salma/Documents/in"
+#define IN "/home/senior-project/in"
 #define SP "/proc/dm-cache/sp"
 
 void error(char *msg) {
@@ -62,9 +62,7 @@ int send_req(char *hostname, int portno) {
 }
 
 int main(int argc, char **argv) {
-	long long count;
 	int fd, fr, portno;
-	// pthread_mutex_t mux;
 	char *hostname, sp[1], up[1], dn[1];
 	if (argc != 3) 
 		fprintf(stderr, "usage: %s <hostname> <port>\n", argv[0]);
@@ -80,7 +78,7 @@ int main(int argc, char **argv) {
 			read(fd, up, 1);
 			close(fd);
 			if (up[0]&0x0F) {
-				printf("sending request...\n");
+				// printf("sending request...\n");
 				send_req(hostname, portno);
 				fr = open(IN, O_RDWR);
 				write(fr, "1", 1); /* may continue handling cache miss */
@@ -91,7 +89,7 @@ int main(int argc, char **argv) {
 			read(fd, dn, 1);
 			close(fd);
 			if (dn[0]&0x0F) {
-				printf("sending request...\n");
+				// printf("sending request...\n");
 				send_req(hostname, portno);
 				fr = open(IN, O_RDWR);
 				write(fr, "1", 1); /* may continue handling cache hit */

@@ -8,7 +8,7 @@ endef
 
 CFLAGS = -Wall -Wextra
 
-all: depend ${APPS}
+all: ${APPS}
 server: server.o
 daemon: daemon.o
 

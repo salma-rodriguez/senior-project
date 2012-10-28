@@ -5,12 +5,10 @@
 #include <stdlib.h>
 #include <errno.h>
 
-#define IN "/proc/dm-cache/in"
+// #define IN "/proc/dm-cache/in"
 #define SP "/proc/dm-cache/sp"
 #define UP "/proc/dm-cache/up"
 #define DN "/proc/dm-cache/dn"
-
-
 
 int proc_read(char *name, char **buf) {
 	int fd, ret;
@@ -23,10 +21,9 @@ int proc_read(char *name, char **buf) {
 int proc_writ(char *name, char *buf) {
 	int fd, ret;
 	fd = open(name, 0200, S_IRUSR | S_IWUSR);
-	if (!(ret = write(fd, buf, 1))) return -ret;
-	// if (!(ret = fsync(fd))) return -ret;
+	ret = write(fd, buf, 1);
 	close(fd);
-	return ret;
+	return -ret;
 }
 
 int main(void) {
