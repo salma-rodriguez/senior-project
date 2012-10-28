@@ -5,7 +5,7 @@ src='/dev/sdc1'
 cac='/dev/sdd'
 
 # dm-cache directory
-dir="/root/senior-project/dm-cache.ko"
+tk="dm-cache.ko"
 
 # parm 4: source device
 # parm 5: cache device
@@ -17,6 +17,6 @@ dir="/root/senior-project/dm-cache.ko"
 # name for virtual machine
 vnm='node1'
 
-insmod $dir
+insmod $tk
 echo 0 16771797 cache $src $cac 0 8 1048576 1 0 | dmsetup create foodev
 mount /dev/mapper/foodev /media/dmmount
