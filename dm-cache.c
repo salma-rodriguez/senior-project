@@ -40,9 +40,10 @@
 #include <linux/time.h>
 #include <linux/uaccess.h>
 #include <linux/syscalls.h>
+#include <daemon/proc_files.h>
 
 #include "dm.h"
-#include "proc_files.h"
+// #include "proc_files.h"
 #include <linux/dm-io.h>
 // #include "dm-bio-list.h"
 #include <linux/dm-kcopyd.h>
