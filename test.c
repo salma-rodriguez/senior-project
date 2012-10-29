@@ -13,9 +13,6 @@ int main(int argc, char **argv) {
 		fd = open("/media/dmmount/file", O_WRONLY | O_CREAT, 0666);
 		write(fd, &s, 1);
 		close(fd);
-		sleep(30);
-		fd = open("/media/dmmount/file", O_WRONLY);
-		write(fd, &s, 1);
-		close(fd);
+		sleep(61);
 	}
 }

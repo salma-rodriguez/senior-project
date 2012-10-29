@@ -40,7 +40,7 @@
 #include <linux/time.h>
 #include <linux/uaccess.h>
 #include <linux/syscalls.h>
-#include <daemon/proc_files.h>
+#include "daemon-apps/proc_files.h"
 
 #include "dm.h"
 // #include "proc_files.h"
