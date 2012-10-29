@@ -66,8 +66,8 @@ static int ot_read_proc(char *buffer, char **start, off_t offset, int size, int 
 
 void handle_cache_miss(void) {
 	/* block until we are sure the disk is spinning */
+	spin_lock(&proc_lock);
 	if (!(sp[0]&0x0F)) {
-		spin_lock(&proc_lock);
 		printk(KERN_INFO "time to spin up disk!\n");
 		un = "1";
 		ot = "0";
@@ -80,15 +80,15 @@ void handle_cache_miss(void) {
 		ot = "0";
 		// clr_val(IN);
 		printk(KERN_INFO "disk has spun up\n");
-		spin_unlock(&proc_lock);
 	}
+	spin_unlock(&proc_lock);
 }
 
 int check_time(void *data) {
 	while (1) {
+		spin_lock(&proc_lock);
 		if (sp[0]&0x0F && ((long)current_kernel_time().tv_sec - time >= TIME_OUT)) {
 			/* block until spun down */
-			spin_lock(&proc_lock);
 			printk(KERN_INFO "time to spin down disk\n");
 			dn = "1";
 			ot = "0";
@@ -100,8 +100,8 @@ int check_time(void *data) {
 			dn = "0", sp = "0";
 			ot = "0";
 			printk(KERN_INFO "disk has spun down\n");
-			spin_unlock(&proc_lock);
 		}
+		spin_unlock(&proc_lock);
 		if (kthread_should_stop()) break;
 		schedule();
 	}
