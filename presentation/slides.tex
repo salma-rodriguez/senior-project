@@ -1,0 +1,93 @@
+\documentclass{beamer}
+\usetheme{Madrid}
+\setbeamercovered{invisible}
+\setbeamertemplate{navigation symbols}{}
+%
+\usepackage{graphicx}
+\usepackage{beamerthemesplit}
+%
+\title[the title]{SSD-based Energy Efficient Cloud Storage}
+\author{Salma Rodriguez}
+\institute[University] {
+Florida International University \\
+\medskip
+{\emph{srodr063@fiu.edu}}
+}
+%
+\date{\today}
+%
+\begin{document}
+%
+\begin{frame}
+\titlepage
+\end{frame}
+%
+\section{Motivation}
+\begin{frame}
+\frametitle{Motivation}
+\begin{block}
+{Distributed SSD Caching}
+High capacity EEPROM devices for caching disk data
+reduces energy consumption on storage server by storing
+working on disk. We want to reduce energy consumption
+on distributed systems by exploring the properties of
+dynamic spin control and replication.
+\end{block}
+\end{frame}
+%
+\section{Replication}
+\begin{frame}
+\frametitle{Consistent Hashing}
+Idea: replicate data evenly with as little disruption
+as possible when nodes join and exit a network. \\
+\begin{theorem}
+For any set of N nodes and K keys, with high probability:
+\newline\newline
+1. Each node is responsible for at most (1 + $\epsilon$)K/N keys
+\newline\newline
+2. When an (N + 1)st node joins or leaves the network,
+   responsibility for O(K/N) keys changes hands (to or from
+   the joining or leaving node)
+\end{theorem}
+Here $\epsilon$ may vary but has an upper bound of \textit{O(log N)}.
+\end{frame}
+%
+\section{Verbatim}
+\begin{frame}[fragile]
+\frametitle{Verbatim}
+\begin{example}[Putting Verbatim]
+\begin{verbatim}
+\begin{frame}
+\frametitle{Outline}
+\begin{block}
+{Why Beamer?}
+%
+\end{block}
+%
+\end{frame}\end{verbatim}
+\end{example}
+\end{frame}
+%
+\begin{frame}[fragile]
+%
+Example of the \verb|\cite| command to give a reference:
+Example of citation using \cite{key1} follows on.
+\end{frame}
+%
+\section{References}
+\begin{frame}
+\frametitle{References}
+\footnotesize {
+\begin{thebibliography}{99}
+ \bibitem[Label1, 2010]{key1} Author's name (1987)
+ \newblock Title of the paper.
+ \newblock \emph{Journal Name} 55(4), 765 -- 799.
+\end{thebibliography}
+}
+\end{frame}
+
+\begin{frame}
+\centerline{The End}
+\end{frame}
+%
+\end{document}
