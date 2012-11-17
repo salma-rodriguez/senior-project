@@ -43,8 +43,8 @@
 #include <asm/atomic.h>
 #include <asm/checksum.h>
 
-#include "dm.h"
-#include "daemon-apps/proc_files.h"
+#include "include/dm.h"
+#include "include/proc_files.h"
 
 #define DMC_DEBUG 1
 
