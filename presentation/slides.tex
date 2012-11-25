@@ -4,9 +4,11 @@
 \setbeamertemplate{navigation symbols}{}
 %
 \usepackage{graphicx}
+\usepackage{algorithm}
+\usepackage[noend]{algpseudocode}
 \usepackage{beamerthemesplit}
 %
-\title[the title]{SSD-based Energy Efficient Cloud Storage}
+\title[Florida International University]{SSD-based Energy Efficient Cloud Storage}
 \author{Salma Rodriguez}
 \institute[University] {
 Florida International University \\
@@ -24,14 +26,47 @@ Florida International University \\
 \begin{frame}
 \frametitle{Motivation}
 \begin{block}
-{Distributed SSD Caching}
+{Solid State Technology}
 High capacity EEPROM devices for caching disk data
 reduces energy consumption on storage server by moving
-data on disk to the more energy-efficient SSD. We want
-to reduce energy consumption on distributed systems by
-exploring the properties of dynamic spin control and
-replication.
+data on disk to the more energy-efficient flash memory.
 \end{block}
+\begin{block}
+{Distributed SSD Caching}
+We want to reduce energy consumption on distributed systems by
+exploring the properties of dynamic spin control of storage
+server disks and replication.
+\end{block}
+\end{frame}
+%
+\section{Dynamic Disk Spin}
+%\Let{$k$}{current time in seconds}
+%\Let{$c$}{time since last cache miss}
+\begin{frame}
+% \begin{algorithm}
+\frametitle{Disk Spin: Implementation}
+\bf Algorithm 1 \rm Spinning the disk up or down dynamically
+%\caption{Algorithm for dynamic spinning the disk up or down
+%\label{alg:dyn-spinning}}
+\begin{algorithmic}[1]
+\Procedure{Spin Up or Down}{}
+\While {true}
+ \If{disk is spinning}
+  \State $k\gets$ current time in seconds
+  \State $c\gets$ time since last cache miss
+  \If{$c$ + $20 \leq k$}
+   \State spin down the disk and change state to spinning
+  \EndIf
+ \Else \Comment{disk is not spinning}
+  \If{DM Cache is blocking on a cache miss}
+   \State spin up the disk and change state to not spinning
+   \State unblock DM Cache
+  \EndIf
+ \EndIf
+\EndWhile
+\EndProcedure
+\end{algorithmic}
+% \end{algorithm}
 \end{frame}
 %
 \section{Replication}
@@ -51,27 +86,27 @@ For any set of N nodes and K keys, with high probability:
 Here $\epsilon$ may vary but has an upper bound of \textit{O(log N)}.
 \end{frame}
 %
-\section{Verbatim}
-\begin{frame}[fragile]
-\frametitle{Verbatim}
-\begin{example}[Putting Verbatim]
-\begin{verbatim}
-\begin{frame}
-\frametitle{Outline}
-\begin{block}
-{Why Beamer?}
+%section{Verbatim}
+%begin{frame}[fragile]
+%frametitle{Verbatim}
+%begin{example}[Putting Verbatim]
+%begin{verbatim}
+%begin{frame}
+%frametitle{Outline}
+%begin{block}
+%Why Beamer?}
 %
-\end{block}
+%end{block}
 %
-\end{frame}\end{verbatim}
-\end{example}
-\end{frame}
+%end{frame}\end{verbatim}
+%end{example}
+%end{frame}
 %
-\begin{frame}[fragile]
+%begin{frame}[fragile]
 %
-Example of the \verb|\cite| command to give a reference:
-Example of citation using \cite{key1} follows on.
-\end{frame}
+%xample of the \verb|\cite| command to give a reference:
+%xample of citation using \cite{key1} follows on.
+%end{frame}
 %
 \section{References}
 \begin{frame}
@@ -83,10 +118,6 @@ Example of citation using \cite{key1} follows on.
  \newblock \emph{Journal Name} 55(4), 765 -- 799.
 \end{thebibliography}
 }
-\end{frame}
-
-\begin{frame}
-\centerline{The End}
 \end{frame}
 %
 \end{document}
