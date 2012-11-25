@@ -3,10 +3,14 @@
 \setbeamercovered{invisible}
 \setbeamertemplate{navigation symbols}{}
 %
+\usepackage{tabularx}
 \usepackage{graphicx}
 \usepackage{algorithm}
 \usepackage[noend]{algpseudocode}
 \usepackage{beamerthemesplit}
+
+\graphicspath{{../images/}}
+
 %
 \title[Florida International University]{SSD-based Energy Efficient Cloud Storage}
 \author{Salma Rodriguez}
@@ -18,25 +22,52 @@ Florida International University \\
 %
 \begin{document}
 %
+\section{Introduction}
+%
 \begin{frame}
 \titlepage
 \end{frame}
 %
-\section{Motivation}
 \begin{frame}
 \frametitle{Motivation}
 \begin{block}
 {Solid State Technology}
-High capacity EEPROM devices for caching disk data
-reduces energy consumption on storage server by moving
-data on disk to the more energy-efficient flash memory.
+High capacity EEPROM devices
+reduces energy consumption when they are used
+as cache for data on a storage server
 \end{block}
 \begin{block}
 {Distributed SSD Caching}
-We want to reduce energy consumption on distributed systems by
-exploring the properties of dynamic spin control of storage
-server disks and replication.
+With a distributed caching solution, the working set of user
+applications is kept mostly in flash memory.
 \end{block}
+\begin{block}
+We explore the properties of dynamic spin control of storage
+server disks and replication of cold pages.
+\end{block}
+\end{frame}
+%
+\begin{frame}
+\frametitle{Linux Device Mapper}
+\begin{tabular}{p{0.463\linewidth}|p{0.463\linewidth}}
+\hline
+\begin{itemize}
+ \item pseudo device is the only device visible to applications
+ \item device mapper facilitates mapping between two block devices
+ \item kernel module uses device mapper to map bios from pseudo device
+\end{itemize} &
+\begin{figure}
+ %\caption{Device Mapper Layout}
+ \includegraphics[scale=.30]{DMC.png}
+ \label{fig:dmc}
+\end{figure} \\
+\hline
+\end{tabular}
+\end{frame}
+%
+\begin{frame}
+\frametitle{Device Mapper Cache}
+% \begin{figure}
 \end{frame}
 %
 \section{Dynamic Disk Spin}
@@ -55,11 +86,11 @@ server disks and replication.
   \State $k\gets$ current time in seconds
   \State $c\gets$ time since last cache miss
   \If{$c$ + $20 \leq k$}
-   \State spin down the disk and change state to spinning
+   \State spin down the disk and change state to not spinning
   \EndIf
  \Else \Comment{disk is not spinning}
   \If{DM Cache is blocking on a cache miss}
-   \State spin up the disk and change state to not spinning
+   \State spin up the disk and change state to spinning
    \State unblock DM Cache
   \EndIf
  \EndIf
