@@ -1,5 +1,0 @@
-\beamer@endinputifotherversion {3.10pt}
-\beamer@sectionintoc {1}{Motivation}{2}{0}{1}
-\beamer@sectionintoc {2}{Dynamic Disk Spin}{3}{0}{2}
-\beamer@sectionintoc {3}{Replication}{4}{0}{3}
-\beamer@sectionintoc {4}{References}{5}{0}{4}
