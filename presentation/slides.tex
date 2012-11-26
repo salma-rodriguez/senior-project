@@ -1,5 +1,9 @@
 \documentclass{beamer}
+%\usetheme{Warsaw}
+%\usetheme{split}
+%\usetheme{Amsterdam}
 \usetheme{Madrid}
+\useoutertheme{miniframes}
 \setbeamercovered{invisible}
 \setbeamertemplate{navigation symbols}{}
 %
@@ -7,16 +11,15 @@
 \usepackage{graphicx}
 \usepackage{algorithm}
 \usepackage[noend]{algpseudocode}
-\usepackage{beamerthemesplit}
-
-\graphicspath{{../images/}}
-
+% \usepackage{beamerthemesplit}
 %
-\title[Florida International University]{SSD-based Energy Efficient Cloud Storage}
+\graphicspath{{../images/}}
+%
+\title{SSD-based Energy Efficient Cloud Storage}
 \author{Salma Rodriguez}
-\institute[University] {
-Florida International University \\
-\medskip
+\institute [FIU]{
+	Florida International University \\
+	%\medskip
 {\emph{srodr063@fiu.edu}}}
 \date{\today}
 %
@@ -25,97 +28,139 @@ Florida International University \\
 \section{Introduction}
 %
 \begin{frame}
-\titlepage
+	\titlepage
 \end{frame}
 %
 \begin{frame}
-\frametitle{Motivation}
-\begin{block}
-{Solid State Technology}
-High capacity EEPROM devices
-reduces energy consumption when they are used
-as cache devices for data on a storage server
-\end{block}
-\begin{block}
-{Distributed SSD Caching}
-With a distributed caching solution, we hope to increase
-the working set in flash memory and keep server disks powered down.
-\end{block}
-\begin{block}
-{Policies Explored}
-We explore the properties of dynamic spin control of storage
-server disks and replication of cold pages.
-\end{block}
+	\frametitle{Motivation}
+	\begin{block}
+		{Solid State Technology}
+		High capacity EEPROM devices have been shown to
+		reduce power consumption when used
+		as local cache for hard disk drives \cite{key2,key3}.
+	\end{block}
+	\vspace{7pt}
+	\begin{block}
+		{Distributed SSD Caching}
+		With a distributed caching solution, we hope to increase
+		the working set in flash memory and keep server disks spun down.
+	\end{block}
+	\vspace{7pt}
+	\begin{block}
+		{Properties to Explore}
+		We explore the properties of dynamic spin down of storage
+		server disks and replication of cold pages.
+	\end{block}
 \end{frame}
 %
 \begin{frame}
-\frametitle{Linux Device Mapper}
-\begin{tabular}{p{0.463\linewidth}|p{0.463\linewidth}}
-\hline
-\begin{itemize}
- \item pseudo device is the only device visible to applications
- \item device mapper facilitates mapping between two block devices
- \item kernel module uses device mapper to map bios from pseudo device
-\end{itemize} &
-\begin{figure}
- %\caption{Device Mapper Layout}
- \includegraphics[scale=.30]{DMC.png}
- \label{fig:dmc}
-\end{figure} \\
-\hline
-\end{tabular}
+	\frametitle{Linux Device Mapper}
+	\begin{tabular}{m{0.465\linewidth}m{0.465\linewidth}}
+		%\hline
+		\begin{itemize}
+			\item device mapper facilitates mapping between block devices
+			\item only pseudo device is visible to applications
+			\item kernel module uses device mapper to map bios sent to pseudo
+				device onto real devices
+			\item devices may not necessarily be locally attached
+		\end{itemize} &
+		\begin{figure}
+			%\caption{Device Mapper Layout}
+			\centering \includegraphics[scale=.23]{DM.png}
+			\label{fig:dm}
+		\end{figure} \\
+		%\hline
+	\end{tabular}
 \end{frame}
-%
 \begin{frame}
-\frametitle{Device Mapper Cache}
-% \begin{figure}
+	\frametitle{Device Mapper Cache}
+	\begin{itemize}
+		\item client machines communicate through iSCSI or AoE network
+		\item DM Cache takes advantage of spatial and temporal locality
+			by storing popular data in a local cache.
+	\end{itemize}
+	\begin{figure}
+		\centering \includegraphics[scale=.30]{DMC.jpg}
+		\label{fig:dmc}
+	\end{figure}
 \end{frame}
 %
 \section{Dynamic Disk Spin}
-%\Let{$k$}{current time in seconds}
-%\Let{$c$}{time since last cache miss}
+%
 \begin{frame}
-% \begin{algorithm}
-\frametitle{Disk Spin: Implementation}
-\bf Algorithm 1 \rm Spinning the disk up or down dynamically
-%\caption{Algorithm for dynamic spinning the disk up or down
-%\label{alg:dyn-spinning}}
-\begin{algorithmic}[1]
-\Procedure{Spin Up or Down}{}
-\While {true}
- \If{disk is spinning}
-  \State $k\gets$ current time in seconds
-  \State $c\gets$ time since last cache miss
-  \If{$c$ + $20 \leq k$}
-   \State spin down the disk and change state to not spinning
-  \EndIf
- \Else \Comment{disk is not spinning}
-  \If{DM Cache is blocking on a cache miss}
-   \State spin up the disk and change state to spinning
-   \State unblock DM Cache
-  \EndIf
- \EndIf
-\EndWhile
-\EndProcedure
-\end{algorithmic}
-% \end{algorithm}
+	\frametitle{Dynamic Spin: Design}
+	\begin{figure}
+		%\caption{Spinning state is controlled dynamically}
+		Figure 1: Spinning state is controlled dynamically
+		\centering \includegraphics[scale=.43]{drawing.png}
+		\label{fig:struct}
+	\end{figure}
 \end{frame}
 %
-\section{Replication}
+\algrenewcommand\algorithmicrequire{\textbf{Precondition:}}
 \begin{frame}
-\frametitle{Consistent Hashing}
-Idea: replicate data evenly with as little disruption
-as possible when nodes join and exit a network. \\
-\begin{theorem}
-For any set of N nodes and K keys, with high probability:
-\newline\newline
-1. Each node is responsible for at most (1 + $\epsilon$)K/N keys
-\newline\newline
-2. When an (N + 1)st node joins or leaves the network,
-   responsibility for O(K/N) keys changes hands (to or from
-   the joining or leaving node)
-\end{theorem}
-Here $\epsilon$ may vary but has an upper bound of \textit{O(log N)}.
+	\frametitle{Dynamic Spin: Implementation}
+	\bf Algorithm 1 \rm Spinning the disk up or down dynamically \\
+	\begin{algorithmic}[1]
+		\Require{storage server disk is spinning}
+		\Procedure{Spin Up or Down}{}
+		\While {true}
+		\If{disk is spinning}
+		\State $k\gets$ current time in seconds
+		\State $c\gets$ time since last cache miss
+		\If{$c$ + $20 \leq k$}
+		\State spin down the disk and change state to not spinning
+		\EndIf
+		\Else \Comment{disk is not spinning}
+		\If{DM Cache is blocking on a cache miss}
+		\State spin up the disk and change state to spinning
+		\State unblock DM Cache
+		\EndIf
+		\EndIf
+		\EndWhile
+		\EndProcedure
+	\end{algorithmic}
+\end{frame}
+%
+\section{Future Work}
+\begin{frame}
+	\frametitle{Replication}
+	\begin{block}{Basic Idea}
+		Save power by replicating unused clean data to neighboring caches
+		instead of evicting from the cache.
+	\end{block}
+	\begin{block}{Assumption}
+		Not all clients will have their cache
+		full to capacity.
+	\end{block}
+	\begin{block}{Challenges}
+		\begin{itemize}
+			\item Choose efficient cache replacement policy to
+				evict pages that are less popular to other caches.
+			\item Cache cooperatively by handling nodes as they dynamically
+				join and exit the network of peer caches.
+		\end{itemize}
+	\end{block}
+\end{frame}
+\begin{frame}
+	\frametitle{Consistent Hashing}
+	Idea: may save power by replicating data with as little disruption
+	as possible when nodes join and exit the network. \\
+	\begin{theorem}
+		For any set of N nodes and K keys, with high probability:
+		\begin{enumerate}
+			\item Each node is responsible for at most (1 + $\epsilon$)K/N keys.
+			\item When an (N + 1)st node joins or leaves the network,
+			responsibility for O(K/N) keys changes to the joining node, or from
+			the leaving node.
+		\end{enumerate}
+	\end{theorem}
+	Here $\epsilon$ may vary but has an upper bound of \textit{O(log N)} \cite{key1}.
+	\begin{block}
+		{Challenge}
+		Dynamically maintain mapping of block addresses to network nodes as new
+		data is replicated to neighboring client caches.
+	\end{block}
 \end{frame}
 %
 %section{Verbatim}
@@ -142,14 +187,24 @@ Here $\epsilon$ may vary but has an upper bound of \textit{O(log N)}.
 %
 \section{References}
 \begin{frame}
-\frametitle{References}
-\footnotesize {
-\begin{thebibliography}{99}
- \bibitem[Label1, 2010]{key1} Author's name (1987)
- \newblock Title of the paper.
- \newblock \emph{Journal Name} 55(4), 765 -- 799.
-\end{thebibliography}
-}
+	\frametitle{References}
+	\footnotesize {
+		\begin{thebibliography}{98}
+			\bibitem[1]{key1} I. Stoica, R. Morris, D. Karger, M. F. Kaashoek, and H. Balakrishnan.
+			Chord: A Scalable Peer-to-peer Lookup Service for Internet Applications.
+			\emph{Special Interest Group on Data Communication (SIGCOMM '01)},
+			San Diego, California, Aug. 2001.
+			\bibitem[2]{key2} J.D. Garcia, J. Carretero, and F. Garcia.
+			Saving power in flash and disk hybrid storage system.
+			\emph{Modeling, Analysis \& Simulation of Computer and Telecommunication Systems
+				(MASCOTS 2009)}, London, U.K., Sep. 2009.
+			\bibitem[3]{key3} T. Bisson and S. A. Brandt.
+			Reducing Energy Consumption with a Non-Volatile Storage Cache.
+			\emph{International Workshop on Software Support for Portable Storage (IWSSPS)
+				held in conjunction with the IEEE Real-Time and Embedded Systems and Applications
+				Symposium (RTAS 2005)}, Mar. 2005
+		\end{thebibliography}
+	}
 \end{frame}
 %
 \end{document}
