@@ -13,16 +13,16 @@
 #define PROC_INIT() ({								\
 	sp = "1", in = un = dn = "0";						\
 	proc_parent = proc_mkdir("dm-cache", NULL);				\
-	create_proc_read_entry("up", 0, proc_parent, up_read_proc, NULL);	\
-	create_proc_read_entry("dn", 0, proc_parent, dn_read_proc, NULL);	\
-	create_proc_read_entry("sp", 0, proc_parent, sp_read_proc, NULL);	\
+	time = current_kernel_time().tv_sec;					\
 	proc_input_entry = create_proc_entry("in", 0666, proc_parent);		\
 	proc_input_entry->read_proc = (read_proc_t *)in_read_proc;		\
 	proc_input_entry->write_proc = (write_proc_t *)write_proc;		\
 	proc_input_entry->mode = S_IFREG | S_IRUGO | S_IWUSR;			\
 	proc_input_entry->uid = 0;						\
 	proc_input_entry->size = 1;						\
-	time = current_kernel_time().tv_sec;					\
+	create_proc_read_entry("up", 0, proc_parent, up_read_proc, NULL);	\
+	create_proc_read_entry("dn", 0, proc_parent, dn_read_proc, NULL);	\
+	create_proc_read_entry("sp", 0, proc_parent, sp_read_proc, NULL);	\
 	spin_lock_init(&proc_lock);						\
 	kthread = kthread_run(&check_time, NULL, "t_watchdog");			\
 })
@@ -76,20 +76,18 @@ static int in_read_proc(char *buffer, char **start, off_t offset, int size, int 
 }
 
 void handle_cache_miss(void) {
-	/* block until we are sure the disk is spinning */
+	/* block until disk is spinning */
 	spin_lock(&proc_lock);
 	if (!(sp[0]&0x0F)) {
 		printk(KERN_INFO "time to spin up disk!\n");
 		un = "1";
 		in = "0";
 		while (1) {
-			// printk(KERN_INFO "cache_miss iteration: %d\n", ++i);
 			if (in[0]&0x0F) break;
-			schedule();
+			msleep(100);
 		}
 		un = "0", sp = "1";
 		in = "0";
-		// clr_val(IN);
 		printk(KERN_INFO "disk has spun up\n");
 	}
 	spin_unlock(&proc_lock);
@@ -97,16 +95,14 @@ void handle_cache_miss(void) {
 
 int check_time(void *data) {
 	while (1) {
+		sleep(TIME_OUT);
 		spin_lock(&proc_lock);
-		if (sp[0]&0x0F && ((long)current_kernel_time().tv_sec - time >= TIME_OUT)) {
-			/* block until spun down */
-			printk(KERN_INFO "time to spin down disk\n");
+		if (sp[0]&0x0F && ((long)current_kernel_time().tv_sec - time >= TIME_OUT) {
 			dn = "1";
 			in = "0";
 			while (1) {
-				// printk("check_time iteration: %d\n", ++i);
 				if (in[0]&0x0F || kthread_should_stop()) break;
-				schedule();
+				msleep(100); /* sleep until spun down */
 			}
 			dn = "0", sp = "0";
 			in = "0";
@@ -114,7 +110,6 @@ int check_time(void *data) {
 		}
 		spin_unlock(&proc_lock);
 		if (kthread_should_stop()) break;
-		schedule();
 	}
 	return 0;
 }
