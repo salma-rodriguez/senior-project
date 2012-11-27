@@ -180,24 +180,6 @@
 	    \EndWhile
 	\EndProcedure
     \end{algorithmic}
-%   \begin{algorithmic}[1]
-%       \Require{storage server disk is spinning}
-%       \Procedure{Spin Up or Down}{}
-%           \State $T\gets$ constant integer specified by user
-%           \While{true}
-%       	\State sleep for $T$ seconds
-%       	\If{disk is spinning} 
-%       	    \State spin down the disk
-%       	    \State change state to not spinning
-%       	\Else \Comment{disk is not spinning}
-%       	    \If{DM Cache is blocking on a cache miss}
-%       		\State unblock DM Cache
-%       		\State change state to spinning
-%       	    \EndIf	
-%       	\EndIf
-%           \EndWhile
-%       \EndProcedure
-%   \end{algorithmic}
 \end{frame}
 
 \section{Future Work}
@@ -245,28 +227,6 @@
 %       	Dynamically copy data and maintain mapping of block addresses to network nodes
 %       	as data is propagated to the cache of neighboring clients.
 %       \end{block}
-%end{frame}
-%
-%section{Verbatim}
-%begin{frame}[fragile]
-%frametitle{Verbatim}
-%begin{example}[Putting Verbatim]
-%begin{verbatim}
-%begin{frame}
-%frametitle{Outline}
-%begin{block}
-%Why Beamer?}
-%
-%end{block}
-%
-%end{frame}\end{verbatim}
-%end{example}
-%end{frame}
-%
-%begin{frame}[fragile]
-%
-%xample of the \verb|\cite| command to give a reference:
-%xample of citation using \cite{key1} follows on.
 %end{frame}
 %
 \section{References}
