@@ -95,7 +95,7 @@ void handle_cache_miss(void) {
 
 int check_time(void *data) {
 	while (1) {
-		sleep(TIME_OUT);
+		msleep(1000 * TIME_OUT);
 		spin_lock(&proc_lock);
 		if (sp[0]&0x0F && ((long)current_kernel_time().tv_sec - time >= TIME_OUT) {
 			dn = "1";
