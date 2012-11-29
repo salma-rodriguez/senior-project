@@ -1,6 +1,0 @@
-\beamer@endinputifotherversion {3.10pt}
-\beamer@sectionintoc {1}{Introduction}{2}{0}{1}
-\beamer@sectionintoc {2}{Dynamic Spin Down}{5}{0}{2}
-\beamer@sectionintoc {3}{Spin Down Results}{7}{0}{3}
-\beamer@sectionintoc {4}{Future Work}{10}{0}{4}
-\beamer@sectionintoc {5}{References}{11}{0}{5}
