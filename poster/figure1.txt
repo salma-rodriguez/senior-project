@@ -1,0 +1,34 @@
+% Generated with LaTeXDraw 2.0.8
+% Fri Nov 30 00:33:22 EST 2012
+% \usepackage[usenames,dvipsnames]{pstricks}
+% \usepackage{epsfig}
+% \usepackage{pst-grad} % For gradients
+% \usepackage{pst-plot} % For axes
+\scalebox{1} % Change this value to rescale the drawing.
+{
+\begin{pspicture}(0,-4.92)(6.84,4.92)
+\psellipse[linewidth=0.04,linestyle=dashed,dash=0.16cm 0.16cm,dimen=outer](3.38,2.97)(0.98,0.33)
+\psline[linewidth=0.04cm,linestyle=dashed,dash=0.16cm 0.16cm](4.36,3.0)(4.38,1.0)
+\psline[linewidth=0.04cm,linestyle=dashed,dash=0.16cm 0.16cm](2.4,2.98)(2.4,0.82)
+\psellipse[linewidth=0.04,linestyle=dashed,dash=0.16cm 0.16cm,dimen=outer](3.38,0.91)(1.02,0.35)
+\psframe[linewidth=0.04,dimen=outer](4.32,4.92)(2.44,3.92)
+\psline[linewidth=0.04cm](3.36,3.96)(3.36,3.3)
+\psellipse[linewidth=0.04,dimen=outer](1.02,-2.49)(0.98,0.33)
+\psline[linewidth=0.04cm](2.0,-2.46)(2.02,-4.46)
+\psline[linewidth=0.04cm](0.04,-2.48)(0.04,-4.64)
+\psellipse[linewidth=0.04,dimen=outer](1.02,-4.55)(1.02,0.35)
+\psellipse[linewidth=0.04,dimen=outer](5.82,-2.51)(0.98,0.33)
+\psline[linewidth=0.04cm](6.8,-2.48)(6.82,-4.48)
+\psline[linewidth=0.04cm](4.84,-2.5)(4.84,-4.66)
+\psellipse[linewidth=0.04,dimen=outer](5.82,-4.57)(1.02,0.35)
+\psline[linewidth=0.04cm](3.42,-1.28)(1.02,-2.14)
+\psline[linewidth=0.04cm](3.4,-1.3)(5.78,-2.16)
+\psframe[linewidth=0.04,dimen=outer](4.78,0.08)(2.08,-0.92)
+\psline[linewidth=0.04cm](3.42,-0.94)(3.42,-1.3)
+\psline[linewidth=0.04cm](3.42,0.08)(3.42,0.6)
+\usefont{T1}{ptm}{m}{n}
+\rput(3.431875,-0.45){Kernel Module}
+\usefont{T1}{ptm}{m}{n}
+\rput(3.3878126,4.43){Application}
+\end{pspicture} 
+}
