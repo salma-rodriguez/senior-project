@@ -1,10 +1,10 @@
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % LaTeX poster template
 % Created by Salma Rodriguez
 % Original Template by Nathaniel Johnston
 % August 2009
 % http://www.nathanieljohnston.com/2009/08/latex-poster-template/
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 \documentclass[final]{beamer}
 \usepackage[orientation=portrait,size=a0,scale=1.24]{beamerposter}
@@ -23,15 +23,12 @@
 \newlength{\sepwid}
 \newlength{\onecolwid}
 \newlength{\twocolwid}
-%\newlength{\threecolwid}
-%\setlength{\paperwidth}{33.1in}
-%\setlength{\paperheight}{46.8in}
 \setlength{\sepwid}{0.016\paperwidth}
 \setlength{\onecolwid}{0.312\paperwidth}
 \setlength{\twocolwid}{0.64\paperwidth}
-%\setlength{\threecolwid}{0.974\paperwidth}
 \setlength{\topmargin}{-0.5in}
 \usetheme{confposter}
+\usetheme{headline}
 \usepackage{exscale}
 
 \graphicspath{{../images/}}
@@ -60,16 +57,26 @@
 \setbeamercolor{block alerted title}{fg=white,bg=dblue!70}
 \setbeamercolor{block alerted body}{fg=black,bg=dblue!10}
 
+\setbeamerfont{footline}{size=\large,series=\tt}
+
+% \begin{beamercolorbox}[wd=\paperwidth]{lower separation line head}
+%   \rule{0pt}{2pt}
+% \end{beamercolorbox}
+% 
+
 %-----------------------------------------------------------
 % Name and authors of poster/paper/research
 %-----------------------------------------------------------
 
 \title{SSD-based Energy Efficient Cloud Storage}
+
 \author{Salma Rodriguez}
-\institute{Florida International University}
+\institute{Florida International University \\
+       Mentor: Prof. Ming Zhao, VISA Laboratory \\
+       Instructor: Masoud Sadjadi}
 
 %-----------------------------------------------------------
-% Start the poster itself
+% Start the poster
 %-----------------------------------------------------------
 
 \begin{document}
@@ -80,13 +87,6 @@
 	    \begin{alertblock}{Problem Statement}
 		Can we save power in storage servers by spinning down
 		the disk dynamically while caching data on solid state drives?
-		%vskip1ex
-		%begin{itemize}
-		% \item latexbeamer
-		% \item pgf (Tikz)
-		% \item beamerposter
-		%end{itemize}
-		%\vskip1ex
 	    \end{alertblock}
 	    \vskip2ex
 	    \setbeamercolor{block alerted body}{fg=black,bg=white}
@@ -140,10 +140,9 @@
 			    Keep server disks (source device) spun down when cache is bigger \\
 			    than the working set. \\
 			\vspace{15pt}
-			\raggedright \bf Figure 1 \rm The state of each disk is controlled dynamically.
+			\raggedright Figure 1: The state of each disk is controlled dynamically.
 			\vspace{15pt}
 			\begin{figure}
-			    %\caption{Spinning state is controlled dynamically}
 			    \centering \includegraphics{drawing.png}
 			    \label{fig:struct}
 			\end{figure}
@@ -179,21 +178,21 @@
 		    \end{block}
 		\end{column}
 	    \end{alertblock}
+	    \vskip2ex
 	    \begin{block}{Evaluation}
-		\begin{itemize}
-		    \item The baseline for our results is a simple iSCSI storage setup.
-		    \item We ran a 30 min test using a webserver-based write-intensive workload.
-		\end{itemize}
+		The baseline for our results is a simple iSCSI storage setup.
+		We ran a 30 min test using a webserver-based workload, and
+		observed that context switches increase power by 14W more than the baseline.
 	    \end{block}
 	    \begin{columns}[t,totalwidth=\twocolwid]
 		\begin{column}{\onecolwid}
 		    %\setbeamercolor{block alerted title}{fg=black,bg=norange}
 		    \begin{block}{Spin Down with Schedule}
 			\begin{figure}
-			    \raggedright Figure 2: The red plot is DM Cache with the spin down daemon. The blue plot
-			    is iSCSI setup without DM Cache. \\
+			    \raggedright Figure 2: Red plot: DM Cache with spin down daemon. Blue Plot:
+				iSCSI without DM Cache. \\
 			    \vspace{15pt}
-			    \centering \includegraphics[scale=1]{image.png}
+			    \centering \includegraphics[scale=1.35]{image.png}
 			    \label{fig:results}
 			\end{figure}
 		    \end{block}
@@ -201,10 +200,10 @@
 		\begin{column}{\onecolwid}
 		    \begin{block}{Spin Down with Sleep}
 			\begin{figure}
-			    \raggedright Figure 3: The red plot is DM Cache with the spin down daemon. The blue plot
-			    is iSCSI setup without DM Cache. \\
+			    \raggedright Figure 3: Red plot: DM Cache with spin down daemon. Blue Plot:
+			    iSCSI without DM Cache. \\
 			    \vspace{15pt}
-			    \centering \includegraphics[scale=1]{image2.png}
+			    \centering \includegraphics[scale=1.35]{image2.png}
 			    \label{fig:results}
 			\end{figure}
 		    \end{block}
@@ -213,10 +212,9 @@
 	    \vskip2ex
 	    \begin{alertblock}{Spin Down Results for Server}
 		\begin{figure}
-		    \raggedright \bf Figure 4 \rm The red plot is DM Cache with the spin down daemon. The blue plot
-		    is iSCSI setup without DM Cache. \\
+		    \raggedright Figure 4: Spin down daemon reduces power on storage server. \\
 		    \vspace{15pt}
-		    \centering \includegraphics[scale=1]{image3.png}
+		    \centering \includegraphics[width=0.7\linewidth]{image3.png}
 		    \label{fig:results}
 		\end{figure}
 	    \end{alertblock}
