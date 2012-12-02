@@ -7,6 +7,6 @@ all:
 	# pdflatex $(DOC)
 
 clean:
-	-rm *.aux *.log *.out *.nav *.snm *.toc
+	-rm *.aux *.log *.out *.nav *.snm *.toc *.pdf
 
 .PHONY: all clean
