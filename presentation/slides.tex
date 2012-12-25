@@ -18,15 +18,16 @@
 \title{SSD-based Energy Efficient Cloud Storage}
 \author{Salma Rodriguez}
 \institute [FIU]{
-    Florida International University \\
-    %\medskip
-    {\emph{srodr063@fiu.edu}}
+    {\small{\emph{srodr063@fiu.edu}}} \\
+    \emph{Florida International University}
 }
-\date{\today}
 %
 \begin{document}
 \begin{frame}
     \titlepage
+    \begin{center}
+    	\includegraphics[scale=.31]{fiu_logo.jpg}
+    \end{center}
 \end{frame}
 %
 \section{Introduction}
@@ -79,7 +80,7 @@
 		by storing popular data in a local cache.
 	\end{itemize}
 	\begin{figure}
-	    \centering \includegraphics[scale=.30]{DMC.jpg}
+	    \centering \includegraphics[scale=.31]{DMC.jpg}
 	    \label{fig:dmc}
 	\end{figure}
     \end{frame}
@@ -91,7 +92,7 @@
     \begin{figure}
 	%\caption{Spinning state is controlled dynamically}
 	\bf Figure 1 \rm The state of each disk is controlled dynamically.
-	\centering \includegraphics[scale=.43]{drawing.png}
+	\centering \includegraphics[scale=.31]{drawing.jpg}
 	\label{fig:struct}
     \end{figure}
 \end{frame}
@@ -126,61 +127,45 @@
 %
 \begin{frame}
     \frametitle{Spin Down Results}
-    \begin{figure}
-	\raggedright \bf Figure 2 \rm dynamic disk spin down results for write-intensive workload \\
-	The red plot is DM Cache with the spin down daemon. The blue plot
-	is iSCSI setup without DM Cache. \\
-	\vspace{15pt}
-	\centering \includegraphics[scale=.45]{image.png}
-	\label{fig:results}
-    \end{figure}
-\end{frame}
-\begin{frame}
-    \begin{block}{Evaluation}
+    %begin{block}{Evaluation}
+    \bf Evaluation \rm
 	\begin{itemize}
 	    \item The baseline for our results is a simple iSCSI storage setup.
 	    \item We ran a 30 min test using a webserver-based write-intensive workload.
+	    \item Figure 2 shows spin down results for client side.
 	\end{itemize}
-    \end{block}
-    \vspace{5pt}
+    %end{block}
+    \begin{figure}
+	    \raggedright \bf Figure 2 \rm The red plot is DM Cache with the spin down daemon. \\
+	    The blue plot is iSCSI setup without DM Cache. \\
+	    \vspace{5pt}
+	    \centering \includegraphics[scale=.45]{image.png}
+	    \label{fig:results}
+    \end{figure}
+\end{frame}
+\begin{frame}
     \begin{block}{Interpretation}
 	\begin{itemize}
 	    \item DM Cache with the spin down daemon increases power
 		by 14 Watt more than the baseline.
 	    \item Spin down worker thread performs too many context switches.
-	    \item Hypothesis: context switches are a performance
-	    	bottleneck and also consume more energy over time.
-	    \item Next: use sleep instead of schedule system call.
+	    \item Use sleep instead of schedule system call.
 	\end{itemize}
     \end{block}
-\end{frame}
-\begin{frame}
-    \frametitle{New Spin Down Policy}
-    \bf Algorithm 2 \rm new policy using sleep instead of schedule
-    \algrenewcommand\algorithmicrequire{\textbf{Precondition:}}
-    \begin{algorithmic}[1]
-	\Require{storage server disk is spinning}
-	\Procedure{Spin Up or Down}{}
-	    \State $T\gets$ constant specified by user
-	    \While{true}
-		\State sleep for $T$ seconds
-		\If{disk is spinning}
-		    \State $k\gets$ current time in seconds
-		    \State $c\gets$ time since last cache miss
-		    \If{$c$ + $T \leq k$}
-			\State spin down the disk and change state to not spinning
-		    \EndIf
-		\Else \Comment{disk is not spinning}
-		    \If{DM Cache is blocking on a cache miss}
-			\State spin up the disk and change state to spinning
-			\State unblock DM Cache
-		    \EndIf
-		\EndIf
-	    \EndWhile
-	\EndProcedure
-    \end{algorithmic}
+    
+    \raggedright \bf Figure 2 \rm Spin down implemented with sleep.
+    Left: spin down results for client. \\
+    Right: spin down results for server.
+    \begin{figure}
+	\vspace{5pt}
+	\centering \includegraphics[scale=.31]{image2.png}
+	\centering \includegraphics[scale=.31]{image3.png}
+	\label{fig:results2}
+    \end{figure}
+    
 \end{frame}
 
+%
 \section{Future Work}
 %
 \begin{frame}
